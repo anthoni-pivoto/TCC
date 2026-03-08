@@ -1,0 +1,128 @@
+
+CREATE SEQUENCE tb_lesoes_id_lesao_seq;
+
+CREATE TABLE tb_lesoes (
+                id_lesao BIGINT NOT NULL DEFAULT nextval('tb_lesoes_id_lesao_seq'),
+                nm_lesao VARCHAR NOT NULL,
+                CONSTRAINT tb_lesoes_pk PRIMARY KEY (id_lesao)
+);
+
+
+ALTER SEQUENCE tb_lesoes_id_lesao_seq OWNED BY tb_lesoes.id_lesao;
+
+CREATE SEQUENCE tb_exercicios_id_exercicio_seq;
+
+CREATE TABLE tb_exercicios (
+                id_exercicio BIGINT NOT NULL DEFAULT nextval('tb_exercicios_id_exercicio_seq'),
+                nm_exercicio VARCHAR NOT NULL,
+                vid_path VARCHAR,
+                CONSTRAINT tb_exercicios_pk PRIMARY KEY (id_exercicio)
+);
+
+
+ALTER SEQUENCE tb_exercicios_id_exercicio_seq OWNED BY tb_exercicios.id_exercicio;
+
+CREATE TABLE tb_exercicio_lesao (
+                id_lesao BIGINT NOT NULL,
+                id_exercicio BIGINT NOT NULL,
+                CONSTRAINT tb_exercicio_lesao_pk PRIMARY KEY (id_lesao, id_exercicio)
+);
+
+
+CREATE SEQUENCE tb_usuario_id_usuario_sequence;
+
+CREATE TABLE tb_usuario (
+                id_usuario BIGINT NOT NULL DEFAULT nextval('tb_usuario_id_usuario_seq'),
+                nm_usuario VARCHAR NOT NULL,
+                em_usuario VARCHAR NOT NULL,
+                pwd_usuario VARCHAR NOT NULL,
+                qtd_dias INTEGER,
+                objetivo VARCHAR,
+                peso REAL,
+                altura REAL,
+                CONSTRAINT id_usuario PRIMARY KEY (id_usuario)
+);
+
+
+ALTER SEQUENCE tb_usuario_id_usuario_seq OWNED BY tb_usuario.id_usuario;
+
+CREATE SEQUENCE tb_treino_id_treino_seq;
+
+CREATE TABLE tb_treino (
+                id_treino BIGINT NOT NULL DEFAULT nextval('tb_treino_id_treino_seq'),
+                id_usuario BIGINT NOT NULL,
+                dia_treino INTEGER NOT NULL,
+				st_ativo BOOLEAN NOT NULL DEFAULT TRUE,
+                CONSTRAINT tb_treino_pk PRIMARY KEY (id_treino)
+);
+COMMENT ON COLUMN tb_treino.dia_treino IS 'dia correspondente em relacao ao q ele solicitou';
+
+---ALTER TABLE tb_treino ADD COLUMN st_ativo BOOLEAN NOT NULL DEFAULT TRUE;
+
+ALTER SEQUENCE tb_treino_id_treino_seq OWNED BY tb_treino.id_treino;
+
+CREATE TABLE tb_treino_exercicio (
+                id_treino BIGINT NOT NULL,
+                id_exercicio BIGINT NOT NULL,
+                qtd_series INTEGER NOT NULL,
+                tempo_descanso_s INTEGER NOT NULL,
+                qtd_repeticoes INTEGER NOT NULL,
+                CONSTRAINT tb_treino_exercicio_pk PRIMARY KEY (id_treino, id_exercicio)
+);
+
+
+CREATE TABLE tb_usuario_lesao (
+                id_usuario BIGINT NOT NULL,
+                id_lesao BIGINT NOT NULL,
+                CONSTRAINT tb_usuario_lesao_pk PRIMARY KEY (id_usuario, id_lesao)
+);
+
+
+ALTER TABLE tb_usuario_lesao ADD CONSTRAINT tb_lesoes_tb_usuario_lesao_fk
+FOREIGN KEY (id_lesao)
+REFERENCES tb_lesoes (id_lesao)
+ON DELETE NO ACTION
+ON UPDATE NO ACTION
+NOT DEFERRABLE;
+
+ALTER TABLE tb_exercicio_lesao ADD CONSTRAINT tb_lesoes_tb_exercicio_lesao_fk
+FOREIGN KEY (id_lesao)
+REFERENCES tb_lesoes (id_lesao)
+ON DELETE NO ACTION
+ON UPDATE NO ACTION
+NOT DEFERRABLE;
+
+ALTER TABLE tb_treino_exercicio ADD CONSTRAINT tb_exercicios_tb_treino_exercicio_fk
+FOREIGN KEY (id_exercicio)
+REFERENCES tb_exercicios (id_exercicio)
+ON DELETE NO ACTION
+ON UPDATE NO ACTION
+NOT DEFERRABLE;
+
+ALTER TABLE tb_exercicio_lesao ADD CONSTRAINT tb_exercicios_tb_exercicio_lesao_fk
+FOREIGN KEY (id_exercicio)
+REFERENCES tb_exercicios (id_exercicio)
+ON DELETE NO ACTION
+ON UPDATE NO ACTION
+NOT DEFERRABLE;
+
+ALTER TABLE tb_usuario_lesao ADD CONSTRAINT tb_usuario_tb_usuario_lesao_fk
+FOREIGN KEY (id_usuario)
+REFERENCES tb_usuario (id_usuario)
+ON DELETE NO ACTION
+ON UPDATE NO ACTION
+NOT DEFERRABLE;
+
+ALTER TABLE tb_treino ADD CONSTRAINT tb_usuario_tb_treino_usuario_fk
+FOREIGN KEY (id_usuario)
+REFERENCES tb_usuario (id_usuario)
+ON DELETE NO ACTION
+ON UPDATE NO ACTION
+NOT DEFERRABLE;
+
+ALTER TABLE tb_treino_exercicio ADD CONSTRAINT tb_treino_tb_treino_exercicio_fk
+FOREIGN KEY (id_treino)
+REFERENCES tb_treino (id_treino)
+ON DELETE NO ACTION
+ON UPDATE NO ACTION
+NOT DEFERRABLE;
