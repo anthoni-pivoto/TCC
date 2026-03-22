@@ -1,17 +1,25 @@
 from fastapi import FastAPI
-from database import engine
+from fastapi.middleware.cors import CORSMiddleware
 from models.base import Base
-# Importar para garantir que as tabelas sejam criadas no 200.19.1.18
-from models import usuario_model, treino_model, associativas 
+from database import engine
 from views import usuario_view, treino_view
 
-Base.metadata.create_all(bind=engine)
+# 1. Instancia o FastAPI
+app = FastAPI()
 
-app = FastAPI(title="Backend Treinos Personalizados")
+# 2. Config middleware CORS para permitir requisições do frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+# 3. Rotas
 app.include_router(usuario_view.router, prefix="/api")
 app.include_router(treino_view.router, prefix="/api")
 
 @app.get("/")
-def root():
-    return {"message": "API de Treinos do Toninho está online!"}
+def home():
+    return {"message": "Backend do TCC rodando!"}

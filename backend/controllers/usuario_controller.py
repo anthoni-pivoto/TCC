@@ -11,7 +11,8 @@ def cadastrar_novo_usuario(db: Session, user_data: UsuarioCreate):
         qtd_dias=user_data.qtd_dias,
         objetivo=user_data.objetivo,
         peso=user_data.peso,
-        altura=user_data.altura
+        altura=user_data.altura,
+        foco=user_data.foco
     )
     
     db.add(novo_usuario)

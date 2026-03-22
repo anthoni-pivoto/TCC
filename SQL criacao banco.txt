@@ -29,7 +29,7 @@ CREATE TABLE tb_exercicio_lesao (
 );
 
 
-CREATE SEQUENCE tb_usuario_id_usuario_sequence;
+CREATE SEQUENCE tb_usuario_id_usuario_seq;
 
 CREATE TABLE tb_usuario (
                 id_usuario BIGINT NOT NULL DEFAULT nextval('tb_usuario_id_usuario_seq'),
@@ -126,3 +126,5 @@ REFERENCES tb_treino (id_treino)
 ON DELETE NO ACTION
 ON UPDATE NO ACTION
 NOT DEFERRABLE;
+
+ALTER TABLE tb_usuario ADD COLUMN foco VARCHAR;

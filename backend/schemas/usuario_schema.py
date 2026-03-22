@@ -9,6 +9,7 @@ class UsuarioCreate(BaseModel):
     objetivo: str
     peso: float
     altura: float
+    foco: str
     ids_lesoes: List[int] = []
 
 class UsuarioResponse(BaseModel):

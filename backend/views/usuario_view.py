@@ -5,7 +5,7 @@ from schemas.usuario_schema import UsuarioCreate, UsuarioResponse
 
 from controllers import usuario_controller 
 
-router = APIRouter(prefix="/usuarios", tags=["Usuários"])
+router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 
 @router.post("/", response_model=UsuarioResponse)
 def criar_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
