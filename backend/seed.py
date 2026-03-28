@@ -58,7 +58,7 @@ def popular_banco():
         exercicios_iniciais = [
             # Perna !!
             # Quadríceps
-            {"nm_exercicio": "Agachamento Livre", "vid_path": "https://link-do-firebase-video1.mp4"},
+            {"nm_exercicio": "Agachamento Livre", "vid_path": "https://link-do-firebase-video1.mp4"}, 
             {"nm_exercicio": "Leg Press", "vid_path": "https://link-do-firebase-video1.mp4"},
             {"nm_exercicio": "Cadeira Extensora", "vid_path": "https://link-do-firebase-video1.mp4"},
             {"nm_exercicio": "Afundo", "vid_path": "https://link-do-firebase-video1.mp4"},

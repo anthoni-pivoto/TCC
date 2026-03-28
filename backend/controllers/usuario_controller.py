@@ -1,13 +1,16 @@
 from sqlalchemy.orm import Session
+from utils.auth_utils import get_password_hash
 from models.usuario_model import UsuarioDB
 from models.associativas import tb_usuario_lesao
 from schemas.usuario_schema import UsuarioCreate
 
 def cadastrar_novo_usuario(db: Session, user_data: UsuarioCreate):
+    senha_criptografada = get_password_hash(user_data.pwd_usuario)
+    
     novo_usuario = UsuarioDB(
         nm_usuario=user_data.nm_usuario,
         em_usuario=user_data.em_usuario,
-        pwd_usuario=user_data.pwd_usuario, # usar hash
+        pwd_usuario=senha_criptografada,
         qtd_dias=user_data.qtd_dias,
         objetivo=user_data.objetivo,
         peso=user_data.peso,
