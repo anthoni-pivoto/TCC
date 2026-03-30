@@ -1,5 +1,26 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import './register_screen.dart';
+
+// --- TELA TEMPORÁRIA (Para onde vamos após o login) ---
+class HomeScreen extends StatelessWidget {
+  final String nomeUsuario;
+  const HomeScreen({super.key, required this.nomeUsuario});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Treine Se - Início')),
+      body: Center(
+        child: Text(
+          'Bem-vindo(a), $nomeUsuario! Você está logado(a).',
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,12 +39,63 @@ class _LoginScreenState extends State<LoginScreen> {
   final Color vintageRed = const Color(0xFFBC4749);
   final Color vintageBlue = const Color(0xFF457B9D);
 
+  // --- Função de Login ---
+  Future<void> _efetuarLogin() async {
+    final String apiUrl = "http://192.168.1.106:8000/api/usuarios/login";
+
+    Map<String, dynamic> loginData = {
+      "em_usuario": _emailController.text.trim(),
+      "pwd_usuario": _passwordController.text,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(loginData),
+      );
+
+      if (mounted) {
+        if (response.statusCode == 200) {
+          final usuarioLogado = jsonDecode(response.body);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Login efetuado com sucesso!'), backgroundColor: Colors.green),
+          );
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomeScreen(nomeUsuario: usuarioLogado['nm_usuario']),
+            ),
+          );
+
+        } else if (response.statusCode == 401) {
+          // Unauthorized (Senha ou e-mail errados)
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('E-mail ou senha incorretos!'), backgroundColor: Colors.red),
+          );
+        } else {
+          print("Erro: ${response.body}");
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Erro no servidor. Tente novamente mais tarde.')),
+          );
+        }
+      }
+    } catch (e) {
+      print("Erro de conexão: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erro de rede. Verifique sua conexão.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgCream, // Fundo cor de pergaminho/creme
+      backgroundColor: bgCream,
       body: SafeArea(
-        child: SingleChildScrollView( // Evita erro de overflow com o teclado
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -31,7 +103,6 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const SizedBox(height: 20),
               
-              // Título do App
               Text(
                 'Treine Se',
                 style: TextStyle(
@@ -39,15 +110,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   fontWeight: FontWeight.w900,
                   color: inkBrown,
                   letterSpacing: 2,
-                  // DICA: Importe uma fonte como 'Chewy' ou 'Bangers' do Google Fonts
                 ),
                 textAlign: TextAlign.center,
               ),
               
               const SizedBox(height: 20),
 
-              // Imagem do Mascote (Substitua pelo caminho correto da sua imagem gerada)
-              // Se ainda não tiver a imagem, isso vai mostrar um ícone temporário
               Container(
                 height: 200,
                 decoration: BoxDecoration(
@@ -55,22 +123,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   border: Border.all(color: inkBrown, width: 3),
                 ),
                 child: ClipOval(
-                  // child: Image.asset('assets/images/mascote.png', fit: BoxFit.cover),
                   child: Icon(Icons.fitness_center, size: 80, color: inkBrown),
                 ),
               ),
 
               const SizedBox(height: 40),
 
-              // Campo de E-mail
               TextFormField(
                 controller: _emailController,
                 style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
-                  labelText: 'NOME DE USUÁRIO / E-MAIL',
+                  labelText: 'E-MAIL',
                   labelStyle: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.5),
                   prefixIcon: Icon(Icons.email_outlined, color: inkBrown),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -86,7 +151,6 @@ class _LoginScreenState extends State<LoginScreen> {
               
               const SizedBox(height: 16),
 
-              // Campo de Senha
               TextFormField(
                 controller: _passwordController,
                 style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
@@ -94,7 +158,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   labelText: 'SENHA',
                   labelStyle: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.5),
                   prefixIcon: Icon(Icons.lock_outline, color: inkBrown),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -110,19 +173,16 @@ class _LoginScreenState extends State<LoginScreen> {
               
               const SizedBox(height: 32),
 
-              // Botão Entrar Vintage
               ElevatedButton(
-                onPressed: () {
-                  print('Login: ${_emailController.text}');
-                },
+                onPressed: _efetuarLogin,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: vintageRed,
-                  foregroundColor: bgCream, // Cor do texto
+                  foregroundColor: bgCream,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  elevation: 6, // Dá uma sombra legal
+                  elevation: 6,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
-                    side: BorderSide(color: inkBrown, width: 3), // Borda grossa de desenho
+                    side: BorderSide(color: inkBrown, width: 3),
                   ),
                 ),
                 child: const Text(
@@ -137,7 +197,6 @@ class _LoginScreenState extends State<LoginScreen> {
               
               const SizedBox(height: 16),
 
-              // Botão de Cadastro
               TextButton(
                 onPressed: () {
                   Navigator.push(
