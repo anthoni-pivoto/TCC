@@ -19,3 +19,7 @@ class UsuarioResponse(BaseModel):
     
     class Config:
         from_attributes = True
+        
+class UsuarioLogin(BaseModel):
+    em_usuario: EmailStr
+    pwd_usuario: str
