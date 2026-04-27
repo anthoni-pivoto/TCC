@@ -96,12 +96,14 @@ def popular_banco():
             {"nm_exercicio": "Bíceps Unilateral Polia", "vid_path": "https://link-do-firebase-video3.mp4"},
             
             # Triceps
-            {"nm_exercicio": "Tríceps Frances Polia", "vid_path": "https://link-do-firebase-video3.mp4"},
-            {"nm_exercicio": "Tríceps Testa", "vid_path": "https://link-do-firebase-video3.mp4"},
+            {"nm_exercicio": "Tríceps Frances", "vid_path": "https://link-do-firebase-video3.mp4"},
+            {"nm_exercicio": "Tríceps Testa na Polia", "vid_path": "https://link-do-firebase-video3.mp4"},
             {"nm_exercicio": "Tríceps Unilateral Polia", "vid_path": "https://link-do-firebase-video3.mp4"},
             {"nm_exercicio": "Triceps Mergulho", "vid_path": "https://link-do-firebase-video3.mp4"},
-            {"nm_exercicio": "Tríceps Corda Polia", "vid_path": "https://link-do-firebase-video3.mp4"},
-            
+            {"nm_exercicio": "Tríceps Corda ", "vid_path": "https://link-do-firebase-video3.mp4"},
+            {"nm_exercicio": "Tríceps Pulley ", "vid_path": "https://link-do-firebase-video3.mp4"},
+
+             
             # Costas
             {"nm_exercicio": "Puxada Frontal", "vid_path": "https://link-do-firebase-video4.mp4"},
             {"nm_exercicio": "Remada Curvada", "vid_path": "https://link-do-firebase-video4.mp4"},
