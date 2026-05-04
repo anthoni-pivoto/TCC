@@ -166,7 +166,6 @@ def popular_banco():
             "Tríceps Frances Polia": ["Impacto no Ombro", "Bursite Olecraniana"],
             "Tríceps Testa": ["Epicondilite Lateral", "Tendinite Triceptal"],
             "Tríceps Unilateral Polia": ["Epicondilite Lateral"],
-            "Triceps Mergulho": ["Impacto no Ombro", "Lesão no Pulso"],
             "Tríceps Corda Polia": ["Tendinite no Cotovelo"],
 
             # COSTAS

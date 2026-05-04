@@ -19,7 +19,7 @@ class ExercicioDB(Base):
 
     id_exercicio = Column(BigInteger, primary_key=True, index=True)
     nm_exercicio = Column(VARCHAR, nullable=False)
-    vid_path = Column(VARCHAR)
+    slug_firebase = Column(VARCHAR)
 
     # Relacionamento com as lesões que impedem este exercício
     lesoes_contraindicadas = relationship("LesaoDB", secondary=tb_exercicio_lesao, back_populates="exercicios")
