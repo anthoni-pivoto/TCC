@@ -10,7 +10,7 @@ from models.exercicio_model import ExercicioDB, LesaoDB
 def popular_banco():
     db = SessionLocal()
     try:
-        print("🚀 Iniciando população do banco de dados local...")
+        print("🚀 Iniciando população do banco de dados local (PostgreSQL)...")
 
         # 1. POPULAR LESÕES 
         lesoes_iniciais = [
@@ -56,71 +56,63 @@ def popular_banco():
 
         # 2. POPULAR EXERCÍCIOS 
         exercicios_iniciais = [
-            # Perna !!
-            # Quadríceps
-            {"nm_exercicio": "Agachamento Livre", "vid_path": "https://link-do-firebase-video1.mp4"}, 
-            {"nm_exercicio": "Leg Press", "vid_path": "https://link-do-firebase-video1.mp4"},
-            {"nm_exercicio": "Cadeira Extensora", "vid_path": "https://link-do-firebase-video1.mp4"},
-            {"nm_exercicio": "Afundo", "vid_path": "https://link-do-firebase-video1.mp4"},
+            # --- Perna e Glúteos ---
+            {"nm_exercicio": "Agachamento Livre", "slug_firebase": "agachamento-livre"}, 
+            {"nm_exercicio": "Leg Press", "slug_firebase": "leg-press"},
+            {"nm_exercicio": "Leg Press Horizontal", "slug_firebase": "leg-press-horizontal"}, # Adicionado!
+            {"nm_exercicio": "Cadeira Extensora", "slug_firebase": "cadeira-extensora"},
+            {"nm_exercicio": "Afundo", "slug_firebase": "afundo"},
+            {"nm_exercicio": "Mesa Flexora", "slug_firebase": "mesa-flexora"},
+            {"nm_exercicio": "Cadeira Adutora (Fecha)", "slug_firebase": "cadeira-adutora-fecha"},
+            {"nm_exercicio": "Stiff", "slug_firebase": "stiff"},
+            {"nm_exercicio": "Elevação Pélvica", "slug_firebase": "elevacao-pelvica"},
+            {"nm_exercicio": "Cadeira Abdutora (Abre)", "slug_firebase": "cadeira-abdutora-abre"},
+            {"nm_exercicio": "Panturrilha em pé", "slug_firebase": "panturrilha-em-pe"},
+            {"nm_exercicio": "Panturrilha sentado", "slug_firebase": "panturrilha-sentado"},
 
-            # Isoquiotibiais
-            {"nm_exercicio": "Mesa Flexora", "vid_path": "https://link-do-firebase-video1.mp4"},
-            {"nm_exercicio": "Cadeira Adutora (Fecha)", "vid_path": "https://link-do-firebase-video1.mp4"},
-            {"nm_exercicio": "Stiff", "vid_path": "https://link-do-firebase-video1.mp4"},
+            # --- Peito ---
+            {"nm_exercicio": "Supino Reto", "slug_firebase": "supino-reto"},
+            {"nm_exercicio": "Supino Inclinado", "slug_firebase": "supino-inclinado"},
+            {"nm_exercicio": "Crucifixo", "slug_firebase": "crucifixo"},
+            {"nm_exercicio": "Cross over Polia Alta", "slug_firebase": "cross-over-polia-alta"},
+            {"nm_exercicio": "Cross over Polia Baixa", "slug_firebase": "cross-over-polia-baixa"},
+            {"nm_exercicio": "Crucifixo Inclinado", "slug_firebase": "crucifixo-inclinado"},
             
-            # Glúteos
-            {"nm_exercicio": "Elevação Pélvica", "vid_path": "https://link-do-firebase-video1.mp4"},
-            {"nm_exercicio": "Cadeira Abdutora (Abre)", "vid_path": "https://link-do-firebase-video1.mp4"},
+            # --- Ombro ---
+            {"nm_exercicio": "Desenvolvimento com Halteres", "slug_firebase": "desenvolvimento-com-halteres"},
+            {"nm_exercicio": "Elevação Lateral", "slug_firebase": "elevacao-lateral"},
+            {"nm_exercicio": "Elevação Frontal", "slug_firebase": "elevacao-frontal"},
+            
+            # --- Biceps ---
+            {"nm_exercicio": "Rosca Direta Sentado", "slug_firebase": "rosca-direta-sentado"},
+            {"nm_exercicio": "Rosca Scott", "slug_firebase": "rosca-scott"},
+            {"nm_exercicio": "Rosca Martelo", "slug_firebase": "rosca-martelo"},
+            {"nm_exercicio": "Bíceps Unilateral Polia", "slug_firebase": "biceps-unilateral-polia"},
+            
+            # --- Triceps ---
+            {"nm_exercicio": "Tríceps Frances", "slug_firebase": "triceps-frances"},
+            {"nm_exercicio": "Tríceps Testa na Polia", "slug_firebase": "triceps-testa-na-polia"},
+            {"nm_exercicio": "Tríceps Unilateral Polia", "slug_firebase": "triceps-unilateral-polia"},
+            {"nm_exercicio": "Triceps Mergulho", "slug_firebase": "triceps-mergulho"},
+            {"nm_exercicio": "Tríceps Corda", "slug_firebase": "triceps-corda"},
+            {"nm_exercicio": "Tríceps Pulley", "slug_firebase": "triceps-pulley"},
 
-            # Panturrilha
-            {"nm_exercicio": "Panturilha em pé", "vid_path": "https://link-do-firebase-video1.mp4"},
-            {"nm_exercicio": "Panturilha sentado", "vid_path": "https://link-do-firebase-video1.mp4"},
-
-            # Peito
-            {"nm_exercicio": "Supino Reto", "vid_path": "https://link-do-firebase-video2.mp4"},
-            {"nm_exercicio": "Supino Inclinado", "vid_path": "https://link-do-firebase-video2.mp4"},
-            {"nm_exercicio": "Crucifixo", "vid_path": "https://link-do-firebase-video2.mp4"},
-            {"nm_exercicio": "Cross over Polia Alta", "vid_path": "https://link-do-firebase-video2.mp4"},
-            {"nm_exercicio": "Cross over Polia Baixa", "vid_path": "https://link-do-firebase-video2.mp4"},
-            {"nm_exercicio": "Crucifixo Inclinado", "vid_path": "https://link-do-firebase-video2.mp4"},
-            
-            # Ombro
-            {"nm_exercicio": "Desenvolvimento com Halteres", "vid_path": "https://link-do-firebase-video3.mp4"},
-            {"nm_exercicio": "Elevação Lateral", "vid_path": "https://link-do-firebase-video3.mp4"},
-            {"nm_exercicio": "Elevação Frontal", "vid_path": "https://link-do-firebase-video3.mp4"},
-            
-            # Biceps
-            {"nm_exercicio": "Rosca Direta Sentado", "vid_path": "https://link-do-firebase-video3.mp4"},
-            {"nm_exercicio": "Rosca Scott", "vid_path": "https://link-do-firebase-video3.mp4"},
-            {"nm_exercicio": "Rosca Martelo", "vid_path": "https://link-do-firebase-video3.mp4"},
-            {"nm_exercicio": "Bíceps Unilateral Polia", "vid_path": "https://link-do-firebase-video3.mp4"},
-            
-            # Triceps
-            {"nm_exercicio": "Tríceps Frances", "vid_path": "https://link-do-firebase-video3.mp4"},
-            {"nm_exercicio": "Tríceps Testa na Polia", "vid_path": "https://link-do-firebase-video3.mp4"},
-            {"nm_exercicio": "Tríceps Unilateral Polia", "vid_path": "https://link-do-firebase-video3.mp4"},
-            {"nm_exercicio": "Triceps Mergulho", "vid_path": "https://link-do-firebase-video3.mp4"},
-            {"nm_exercicio": "Tríceps Corda ", "vid_path": "https://link-do-firebase-video3.mp4"},
-            {"nm_exercicio": "Tríceps Pulley ", "vid_path": "https://link-do-firebase-video3.mp4"},
-
-             
-            # Costas
-            {"nm_exercicio": "Puxada Frontal", "vid_path": "https://link-do-firebase-video4.mp4"},
-            {"nm_exercicio": "Remada Curvada", "vid_path": "https://link-do-firebase-video4.mp4"},
-            {"nm_exercicio": "Remada Cavalinho Curvada", "vid_path": "https://link-do-firebase-video4.mp4"},
-            {"nm_exercicio": "Remada Unilateral Halter", "vid_path": "https://link-do-firebase-video4.mp4"},
-            {"nm_exercicio": "Remada Baixa Polia", "vid_path": "https://link-do-firebase-video4.mp4"},
-            {"nm_exercicio": "Pull Down", "vid_path": "https://link-do-firebase-video4.mp4"},
-            {"nm_exercicio": "Face Pull", "vid_path": "https://link-do-firebase-video4.mp4"},
-            {"nm_exercicio": "Voador Inverso", "vid_path": "https://link-do-firebase-video4.mp4"},
-    
+            # --- Costas ---
+            {"nm_exercicio": "Puxada Frontal", "slug_firebase": "puxada-frontal"},
+            {"nm_exercicio": "Remada Curvada", "slug_firebase": "remada-curvada"},
+            {"nm_exercicio": "Remada Cavalinho Curvada", "slug_firebase": "remada-cavalinho-curvada"},
+            {"nm_exercicio": "Remada Unilateral Halter", "slug_firebase": "remada-unilateral-halter"},
+            {"nm_exercicio": "Remada Baixa Polia", "slug_firebase": "remada-baixa-polia"},
+            {"nm_exercicio": "Pull Down", "slug_firebase": "pull-down"},
+            {"nm_exercicio": "Face Pull", "slug_firebase": "face-pull"},
+            {"nm_exercicio": "Voador Inverso", "slug_firebase": "voador-inverso"}
         ]
 
         for item in exercicios_iniciais:
             existe = db.query(ExercicioDB).filter(ExercicioDB.nm_exercicio == item["nm_exercicio"]).first()
             if not existe:
                 db.add(ExercicioDB(**item))
-                print(f"✅ Exercício adicionado: {item['nm_exercicio']}")
+                print(f"✅ Exercício adicionado: {item['nm_exercicio']} (Slug: {item['slug_firebase']})")
 
         # 3. COMMIT PARA SALVAR LESÕES E EXERCÍCIOS ANTES DE VINCULAR
         db.commit()
@@ -128,53 +120,54 @@ def popular_banco():
         # 4. VINCULAR EXERCÍCIOS ÀS LESÕES (N:N) ---
         print("\n🔗 Criando vínculos de contraindicação...")
         
-        # Regras de contraindicação 
+        # Regras de contraindicação
         vinculos_contraindicados = {
             # PERNA
-            "Agachamento Livre": ["Lesão no Joelho", "Hérnia de Disco", "Lombalgia"],
-            "Leg Press": ["Hérnia de Disco", "Lombalgia", "Condromalácia"],
-            "Cadeira Extensora": ["Tendinite Patelar", "Lesão no LCA"],
+            "Agachamento Livre": ["Lesão no Joelho", "Hérnia de Disco", "Lombalgia (Dor Lombar)"],
+            "Leg Press": ["Hérnia de Disco", "Lombalgia (Dor Lombar)", "Condromalácia"],
+            "Leg Press Horizontal": ["Hérnia de Disco", "Lombalgia (Dor Lombar)", "Condromalácia"],
+            "Cadeira Extensora": ["Tendinite Patelar"],
             "Afundo": ["Instabilidade de Tornozelo", "Lesão no Joelho"],
-            "Mesa Flexora": ["Lombalgia"],
-            "Cadeira Adutora (Fecha):": ["Pubalgia", "Estiramento de Virilha"],
-            "Stiff": ["Hérnia de Disco", "Lombalgia", "Encurtamento Severo de Isquiotibiais"],
-            "Elevação Pélvica": ["Lesão na Coluna Torácica", "Lombalgia"],
-            "Cadeira Abdutora (Abre)": ["Bursite Trocantérica"],
-            "Panturilha em pé": ["Fascite Plantar", "Tendinite de Aquiles"],
-            "Panturilha sentado": ["Tendinite de Aquiles"],
+            "Mesa Flexora": ["Lombalgia (Dor Lombar)"],
+            "Cadeira Adutora (Fecha)": ["Pubalgia / Dor na Virilha"],
+            "Stiff": ["Hérnia de Disco", "Lombalgia (Dor Lombar)"],
+            "Elevação Pélvica": ["Lesão na Coluna Torácica", "Lombalgia (Dor Lombar)"],
+            "Cadeira Abdutora (Abre)": ["Bursite Trocantérica (Quadril)"],
+            "Panturrilha em pé": ["Fascite Plantar", "Tendinite de Aquiles"],
+            "Panturrilha sentado": ["Tendinite de Aquiles"],
 
             # PEITO
             "Supino Reto": ["Tendinite no Ombro", "Lesão no Manguito Rotador"],
-            "Supino Inclinado": ["Impacto no Ombro", "Lesão na Acromioclavicular"],
-            "Crucifixo": ["Instabilidade de Ombro", "Estiramento de Peitoral"],
+            "Supino Inclinado": ["Síndrome do Impacto (Ombro)"],
+            "Crucifixo": ["Estiramento Muscular Recente"],
             "Cross over Polia Alta": ["Lesão no Manguito Rotador"],
-            "Cross over Polia Baixa": ["Impacto no Ombro"],
-            "Crucifixo Inclinado": ["Instabilidade de Ombro"],
+            "Cross over Polia Baixa": ["Síndrome do Impacto (Ombro)"],
+            "Crucifixo Inclinado": ["Estiramento Muscular Recente"],
 
             # OMBRO
-            "Desenvolvimento com Halteres": ["Impacto no Ombro", "Hérnia de Disco Cervical"],
-            "Elevação Lateral": ["Bursite no Ombro", "Síndrome do Impacto"],
-            "Elevação Frontal": ["Tendinite de Bíceps (Cabeça Longa)"],
+            "Desenvolvimento com Halteres": ["Síndrome do Impacto (Ombro)", "Hérnia de Disco Cervical"],
+            "Elevação Lateral": ["Bursite no Ombro", "Síndrome do Impacto (Ombro)"],
+            "Elevação Frontal": ["Tendinite no Ombro"],
 
             # BICEPS
-            "Rosca Direta Sentado": ["Epicondilite Medial", "Lombalgia"],
-            "Rosca Scott": ["Tendinite no Cotovelo", "Risco de Estiramento de Bíceps"],
-            "Rosca Martelo": ["Epicondilite Lateral"],
-            "Bíceps Unilateral Polia": ["Instabilidade de Cotovelo"],
+            "Rosca Direta Sentado": ["Epicondilite Medial (Cotovelo)", "Lombalgia (Dor Lombar)"],
+            "Rosca Scott": ["Epicondilite Medial (Cotovelo)"],
+            "Rosca Martelo": ["Epicondilite Lateral (Cotovelo)"],
+            "Bíceps Unilateral Polia": ["Epicondilite Lateral (Cotovelo)"],
 
             # TRICEPS
-            "Tríceps Frances Polia": ["Impacto no Ombro", "Bursite Olecraniana"],
-            "Tríceps Testa": ["Epicondilite Lateral", "Tendinite Triceptal"],
-            "Tríceps Unilateral Polia": ["Epicondilite Lateral"],
-            "Tríceps Corda Polia": ["Tendinite no Cotovelo"],
+            "Tríceps Frances": ["Síndrome do Impacto (Ombro)"],
+            "Tríceps Testa na Polia": ["Epicondilite Lateral (Cotovelo)"],
+            "Tríceps Unilateral Polia": ["Epicondilite Lateral (Cotovelo)"],
+            "Tríceps Corda": ["Epicondilite Lateral (Cotovelo)"],
 
             # COSTAS
-            "Puxada Frontal": ["Impacto no Ombro", "Hérnia de Disco Cervical"],
-            "Remada Curvada": ["Hérnia de Disco", "Lombalgia Crônica"],
-            "Remada Cavalinho Curvada": ["Lombalgia", "Hérnia de Disco"],
-            "Remada Unilateral Halter": ["Lombalgia"],
-            "Remada Baixa Polia": ["Lombalgia"],
-            "Pull Down": ["Instabilidade de Ombro"],
+            "Puxada Frontal": ["Síndrome do Impacto (Ombro)", "Hérnia de Disco Cervical"],
+            "Remada Curvada": ["Hérnia de Disco", "Lombalgia (Dor Lombar)"],
+            "Remada Cavalinho Curvada": ["Lombalgia (Dor Lombar)", "Hérnia de Disco"],
+            "Remada Unilateral Halter": ["Lombalgia (Dor Lombar)"],
+            "Remada Baixa Polia": ["Lombalgia (Dor Lombar)"],
+            "Pull Down": ["Síndrome do Impacto (Ombro)"],
             "Face Pull": ["Lesão no Manguito Rotador"],
             "Voador Inverso": ["Bursite no Ombro"]
         }
@@ -188,14 +181,15 @@ def popular_banco():
                     # 4. 2. Busca a lesao
                     lesao_obj = db.query(LesaoDB).filter(LesaoDB.nm_lesao == nome_lesao).first()
                     
-                    # 4. 3. Verifica se a lesão existe E se já não está vinculada a este exercício
+                    # 4. 3. Verifica se a lesão existe E se já não está vinculada
                     if lesao_obj and lesao_obj not in exercicio_obj.lesoes_contraindicadas:
-                        # .append() insere na tb_exercicio_lesao automaticamente por conta das relações definidas nos models
                         exercicio_obj.lesoes_contraindicadas.append(lesao_obj)
                         print(f"   🚫 {nome_exercicio} contraindicado para {nome_lesao}")
+            else:
+                print(f"⚠️ Atenção: Exercício '{nome_exercicio}' não encontrado na hora de vincular lesões.")
 
         db.commit()
-        print("\n✨ Banco de dados populado com sucesso!")
+        print("\n✨ Banco de dados populado com sucesso e linkado com o Firestore!")
 
     except Exception as e:
         print(f"❌ Erro ao popular: {e}")

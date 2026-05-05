@@ -3,12 +3,12 @@ from firebase_admin import credentials, firestore
 import unicodedata
 import re
 
-# 1. Carrega a sua chave secreta do Firebase
+# 1. Carrega chave do Firebase
 cred = credentials.Certificate("firebase-key.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-# 2. Lista Enriquecida com Metadados (A Mágica do NoSQL)
+# 2. Lista de documentos
 exercicios_ricos = [
     # --- PERNA E GLÚTEOS ---
     {
@@ -256,7 +256,7 @@ exercicios_ricos = [
     }
 ]
 
-# Função para transformar "Rosca Direta Sentado" em "rosca-direta-sentado"
+# Função criar slug, ex? "Rosca Direta Sentado" em "rosca-direta-sentado"
 def gerar_slug(nome: str) -> str:
     processado = unicodedata.normalize('NFKD', nome).encode('ASCII', 'ignore').decode('utf-8')
     processado = re.sub(r'[^\w\s-]', '', processado).strip().lower()
@@ -269,7 +269,7 @@ def enviar_para_firestore():
     for ex in exercicios_ricos:
         slug = gerar_slug(ex['nm_exercicio'])
         
-        # Estrutura JSON profissional completa para o Firestore
+        # Estrutura JSON
         documento = {
             "nome": ex['nm_exercicio'],
             "gif_url": ex['vid_path'],
@@ -279,11 +279,11 @@ def enviar_para_firestore():
             "dicas_execucao": ex['dicas_execucao']
         }
         
-        # Cria ou atualiza o documento no Firebase
+        # Cria ou atualiza o documento 
         colecao.document(slug).set(documento)
-        print(f"✅ Salvo com Metadados: {slug}")
+        print(f"✅ Salvo no firestore {slug}")
 
-    print("\n🚀 Finalizado! Seu NoSQL está populado com dados dignos de um App Profissional.")
+    print(f"\n Dados enviados com sucesso! Total de exercícios: {len(exercicios_ricos)}")
 
 if __name__ == "__main__":
     enviar_para_firestore()
