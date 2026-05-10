@@ -18,13 +18,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _heightController = TextEditingController();
 
   // Variáveis para armazenar as seleções dos Dropdowns
-  String _selectedGoal = "Ganho de força";
-  String _selectedFocus = "Equilibrado";
+  String _selectedGoal = "forca";
+  String _selectedFocus = "full_body";
   int _selectedDays = 4;
 
-  // Listas de opções para os seletores
-  final List<String> _goalOptions = ["Ganho de força", "Definição", "Perder Gordura"];
-  final List<String> _focusOptions = ["Superiores", "Inferiores", "Abdomen", "Equilibrado"];
+  // label exibido -> valor enviado ao backend
+  final Map<String, String> _goalOptions = {
+    "Ganho de Força":  "forca",
+    "Definição":       "hipertrofia",
+    "Perder Gordura":  "emagrecimento",
+    "Condicionamento": "condicionamento",
+  };
+  final Map<String, String> _focusOptions = {
+    "Equilibrado":  "full_body",
+    "Superiores":   "superiores",
+    "Inferiores":   "inferiores",
+  };
   final List<int> _daysOptions = [2, 3, 4, 5];
 
   // --- Paleta de Cores Vintage ---
@@ -33,7 +42,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final Color vintageRed = const Color(0xFFBC4749);
 
   Future<void> _cadastrarUsuario() async {
-    final String apiUrl = "http://192.168.1.106:8000/api/usuarios/";
+    final String apiUrl = "http://192.168.0.12:8000/api/usuarios/";
 
     Map<String, dynamic> userData = {
       "nm_usuario": _nameController.text,
@@ -90,18 +99,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgCream, // Fundo temático
+      backgroundColor: bgCream,
       appBar: AppBar(
         backgroundColor: bgCream,
-        elevation: 0, // Tira a sombra padrão
-        iconTheme: IconThemeData(color: inkBrown, size: 28), // Ícone de voltar escuro
+        elevation: 0, 
+        iconTheme: IconThemeData(color: inkBrown, size: 28), 
         title: Text(
           'Criar Conta', 
           style: TextStyle(color: inkBrown, fontWeight: FontWeight.w900, fontSize: 26)
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(3.0),
-          child: Container(color: inkBrown, height: 3.0), // Linha de divisão estilo quadrinho
+          child: Container(color: inkBrown, height: 3.0), 
         ),
       ),
       body: SingleChildScrollView(
@@ -172,12 +181,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
             DropdownButtonFormField<String>(
               value: _selectedGoal,
               decoration: _buildVintageDecoration('Objetivo'),
-              dropdownColor: bgCream, // Fundo da lista ao abrir
+              dropdownColor: bgCream,
               iconEnabledColor: inkBrown,
-              items: _goalOptions.map((String value) {
+              items: _goalOptions.entries.map((entry) {
                 return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value, style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold)),
+                  value: entry.value,
+                  child: Text(entry.key, style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold)),
                 );
               }).toList(),
               onChanged: (newValue) {
@@ -194,10 +203,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               decoration: _buildVintageDecoration('Foco do Treino'),
               dropdownColor: bgCream,
               iconEnabledColor: inkBrown,
-              items: _focusOptions.map((String value) {
+              items: _focusOptions.entries.map((entry) {
                 return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value, style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold)),
+                  value: entry.value,
+                  child: Text(entry.key, style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold)),
                 );
               }).toList(),
               onChanged: (newValue) {

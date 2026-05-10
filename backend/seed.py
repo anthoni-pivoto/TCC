@@ -54,65 +54,68 @@ def popular_banco():
                 db.add(LesaoDB(**item))
                 print(f"✅ Lesão adicionada: {item['nm_lesao']}")
 
-        # 2. POPULAR EXERCÍCIOS 
+        # 2. POPULAR EXERCÍCIOS
         exercicios_iniciais = [
             # --- Perna e Glúteos ---
-            {"nm_exercicio": "Agachamento Livre", "slug_firebase": "agachamento-livre"}, 
-            {"nm_exercicio": "Leg Press", "slug_firebase": "leg-press"},
-            {"nm_exercicio": "Leg Press Horizontal", "slug_firebase": "leg-press-horizontal"}, # Adicionado!
-            {"nm_exercicio": "Cadeira Extensora", "slug_firebase": "cadeira-extensora"},
-            {"nm_exercicio": "Afundo", "slug_firebase": "afundo"},
-            {"nm_exercicio": "Mesa Flexora", "slug_firebase": "mesa-flexora"},
-            {"nm_exercicio": "Cadeira Adutora (Fecha)", "slug_firebase": "cadeira-adutora-fecha"},
-            {"nm_exercicio": "Stiff", "slug_firebase": "stiff"},
-            {"nm_exercicio": "Elevação Pélvica", "slug_firebase": "elevacao-pelvica"},
-            {"nm_exercicio": "Cadeira Abdutora (Abre)", "slug_firebase": "cadeira-abdutora-abre"},
-            {"nm_exercicio": "Panturrilha em pé", "slug_firebase": "panturrilha-em-pe"},
-            {"nm_exercicio": "Panturrilha sentado", "slug_firebase": "panturrilha-sentado"},
+            {"nm_exercicio": "Agachamento Livre",       "slug_firebase": "agachamento-livre",        "grupo_muscular": "quadriceps"},
+            {"nm_exercicio": "Leg Press",               "slug_firebase": "leg-press",                "grupo_muscular": "quadriceps"},
+            {"nm_exercicio": "Leg Press Horizontal",    "slug_firebase": "leg-press-horizontal",     "grupo_muscular": "quadriceps"},
+            {"nm_exercicio": "Cadeira Extensora",       "slug_firebase": "cadeira-extensora",        "grupo_muscular": "quadriceps"},
+            {"nm_exercicio": "Afundo",                  "slug_firebase": "afundo",                   "grupo_muscular": "quadriceps"},
+            {"nm_exercicio": "Mesa Flexora",            "slug_firebase": "mesa-flexora",             "grupo_muscular": "isquiotibiais"},
+            {"nm_exercicio": "Stiff",                   "slug_firebase": "stiff",                    "grupo_muscular": "isquiotibiais"},
+            {"nm_exercicio": "Elevação Pélvica",        "slug_firebase": "elevacao-pelvica",         "grupo_muscular": "gluteos"},
+            {"nm_exercicio": "Cadeira Adutora (Fecha)", "slug_firebase": "cadeira-adutora-fecha",    "grupo_muscular": "adutores"},
+            {"nm_exercicio": "Cadeira Abdutora (Abre)", "slug_firebase": "cadeira-abdutora-abre",    "grupo_muscular": "abdutores"},
+            {"nm_exercicio": "Panturrilha em pé",       "slug_firebase": "panturrilha-em-pe",        "grupo_muscular": "panturrilha"},
+            {"nm_exercicio": "Panturrilha sentado",     "slug_firebase": "panturrilha-sentado",      "grupo_muscular": "panturrilha"},
 
             # --- Peito ---
-            {"nm_exercicio": "Supino Reto", "slug_firebase": "supino-reto"},
-            {"nm_exercicio": "Supino Inclinado", "slug_firebase": "supino-inclinado"},
-            {"nm_exercicio": "Crucifixo", "slug_firebase": "crucifixo"},
-            {"nm_exercicio": "Cross over Polia Alta", "slug_firebase": "cross-over-polia-alta"},
-            {"nm_exercicio": "Cross over Polia Baixa", "slug_firebase": "cross-over-polia-baixa"},
-            {"nm_exercicio": "Crucifixo Inclinado", "slug_firebase": "crucifixo-inclinado"},
-            
+            {"nm_exercicio": "Supino Reto",             "slug_firebase": "supino-reto",              "grupo_muscular": "peito"},
+            {"nm_exercicio": "Supino Inclinado",        "slug_firebase": "supino-inclinado",         "grupo_muscular": "peito"},
+            {"nm_exercicio": "Crucifixo",               "slug_firebase": "crucifixo",                "grupo_muscular": "peito"},
+            {"nm_exercicio": "Cross over Polia Alta",   "slug_firebase": "cross-over-polia-alta",    "grupo_muscular": "peito"},
+            {"nm_exercicio": "Cross over Polia Baixa",  "slug_firebase": "cross-over-polia-baixa",   "grupo_muscular": "peito"},
+            {"nm_exercicio": "Crucifixo Inclinado",     "slug_firebase": "crucifixo-inclinado",      "grupo_muscular": "peito"},
+
             # --- Ombro ---
-            {"nm_exercicio": "Desenvolvimento com Halteres", "slug_firebase": "desenvolvimento-com-halteres"},
-            {"nm_exercicio": "Elevação Lateral", "slug_firebase": "elevacao-lateral"},
-            {"nm_exercicio": "Elevação Frontal", "slug_firebase": "elevacao-frontal"},
-            
+            {"nm_exercicio": "Desenvolvimento com Halteres", "slug_firebase": "desenvolvimento-com-halteres", "grupo_muscular": "ombro"},
+            {"nm_exercicio": "Elevação Lateral",        "slug_firebase": "elevacao-lateral",         "grupo_muscular": "ombro"},
+            {"nm_exercicio": "Elevação Frontal",        "slug_firebase": "elevacao-frontal",         "grupo_muscular": "ombro"},
+
             # --- Biceps ---
-            {"nm_exercicio": "Rosca Direta Sentado", "slug_firebase": "rosca-direta-sentado"},
-            {"nm_exercicio": "Rosca Scott", "slug_firebase": "rosca-scott"},
-            {"nm_exercicio": "Rosca Martelo", "slug_firebase": "rosca-martelo"},
-            {"nm_exercicio": "Bíceps Unilateral Polia", "slug_firebase": "biceps-unilateral-polia"},
-            
+            {"nm_exercicio": "Rosca Direta Sentado",    "slug_firebase": "rosca-direta-sentado",     "grupo_muscular": "biceps"},
+            {"nm_exercicio": "Rosca Scott",             "slug_firebase": "rosca-scott",              "grupo_muscular": "biceps"},
+            {"nm_exercicio": "Rosca Martelo",           "slug_firebase": "rosca-martelo",            "grupo_muscular": "biceps"},
+            {"nm_exercicio": "Bíceps Unilateral Polia", "slug_firebase": "biceps-unilateral-polia",  "grupo_muscular": "biceps"},
+
             # --- Triceps ---
-            {"nm_exercicio": "Tríceps Frances", "slug_firebase": "triceps-frances"},
-            {"nm_exercicio": "Tríceps Testa na Polia", "slug_firebase": "triceps-testa-na-polia"},
-            {"nm_exercicio": "Tríceps Unilateral Polia", "slug_firebase": "triceps-unilateral-polia"},
-            {"nm_exercicio": "Triceps Mergulho", "slug_firebase": "triceps-mergulho"},
-            {"nm_exercicio": "Tríceps Corda", "slug_firebase": "triceps-corda"},
-            {"nm_exercicio": "Tríceps Pulley", "slug_firebase": "triceps-pulley"},
+            {"nm_exercicio": "Tríceps Frances",         "slug_firebase": "triceps-frances",          "grupo_muscular": "triceps"},
+            {"nm_exercicio": "Tríceps Testa na Polia",  "slug_firebase": "triceps-testa-na-polia",   "grupo_muscular": "triceps"},
+            {"nm_exercicio": "Tríceps Unilateral Polia","slug_firebase": "triceps-unilateral-polia",  "grupo_muscular": "triceps"},
+            {"nm_exercicio": "Triceps Mergulho",        "slug_firebase": "triceps-mergulho",         "grupo_muscular": "triceps"},
+            {"nm_exercicio": "Tríceps Corda",           "slug_firebase": "triceps-corda",            "grupo_muscular": "triceps"},
+            {"nm_exercicio": "Tríceps Pulley",          "slug_firebase": "triceps-pulley",           "grupo_muscular": "triceps"},
 
             # --- Costas ---
-            {"nm_exercicio": "Puxada Frontal", "slug_firebase": "puxada-frontal"},
-            {"nm_exercicio": "Remada Curvada", "slug_firebase": "remada-curvada"},
-            {"nm_exercicio": "Remada Cavalinho Curvada", "slug_firebase": "remada-cavalinho-curvada"},
-            {"nm_exercicio": "Remada Unilateral Halter", "slug_firebase": "remada-unilateral-halter"},
-            {"nm_exercicio": "Remada Baixa Polia", "slug_firebase": "remada-baixa-polia"},
-            {"nm_exercicio": "Pull Down", "slug_firebase": "pull-down"},
-            {"nm_exercicio": "Face Pull", "slug_firebase": "face-pull"},
-            {"nm_exercicio": "Voador Inverso", "slug_firebase": "voador-inverso"}
+            {"nm_exercicio": "Puxada Frontal",          "slug_firebase": "puxada-frontal",           "grupo_muscular": "costas"},
+            {"nm_exercicio": "Remada Curvada",          "slug_firebase": "remada-curvada",           "grupo_muscular": "costas"},
+            {"nm_exercicio": "Remada Cavalinho Curvada","slug_firebase": "remada-cavalinho-curvada",  "grupo_muscular": "costas"},
+            {"nm_exercicio": "Remada Unilateral Halter","slug_firebase": "remada-unilateral-halter",  "grupo_muscular": "costas"},
+            {"nm_exercicio": "Remada Baixa Polia",      "slug_firebase": "remada-baixa-polia",       "grupo_muscular": "costas"},
+            {"nm_exercicio": "Pull Down",               "slug_firebase": "pull-down",                "grupo_muscular": "costas"},
+            {"nm_exercicio": "Face Pull",               "slug_firebase": "face-pull",                "grupo_muscular": "costas"},
+            {"nm_exercicio": "Voador Inverso",          "slug_firebase": "voador-inverso",           "grupo_muscular": "costas"},
         ]
 
         for item in exercicios_iniciais:
             existe = db.query(ExercicioDB).filter(ExercicioDB.nm_exercicio == item["nm_exercicio"]).first()
             if not existe:
                 db.add(ExercicioDB(**item))
-                print(f"✅ Exercício adicionado: {item['nm_exercicio']} (Slug: {item['slug_firebase']})")
+                print(f"✅ Exercício adicionado: {item['nm_exercicio']}")
+            elif existe.grupo_muscular != item["grupo_muscular"]:
+                existe.grupo_muscular = item["grupo_muscular"]
+                print(f"🔄 Exercício atualizado: {item['nm_exercicio']} → {item['grupo_muscular']}")
 
         # 3. COMMIT PARA SALVAR LESÕES E EXERCÍCIOS ANTES DE VINCULAR
         db.commit()

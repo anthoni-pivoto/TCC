@@ -20,6 +20,7 @@ class ExercicioDB(Base):
     id_exercicio = Column(BigInteger, primary_key=True, index=True)
     nm_exercicio = Column(VARCHAR, nullable=False)
     slug_firebase = Column(VARCHAR)
+    grupo_muscular = Column(VARCHAR, nullable=False)
 
     # Relacionamento com as lesões que impedem este exercício
     lesoes_contraindicadas = relationship("LesaoDB", secondary=tb_exercicio_lesao, back_populates="exercicios")

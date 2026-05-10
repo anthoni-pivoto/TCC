@@ -5,6 +5,7 @@ from models.usuario_model import UsuarioDB
 from models.associativas import tb_usuario_lesao
 from schemas.usuario_schema import UsuarioCreate, UsuarioLogin
 from utils.auth_utils import verify_password
+from services.treino_service import gerar_treino_personalizado
 
 def cadastrar_novo_usuario(db: Session, user_data: UsuarioCreate):
     senha_criptografada = get_password_hash(user_data.pwd_usuario)
@@ -27,11 +28,13 @@ def cadastrar_novo_usuario(db: Session, user_data: UsuarioCreate):
     if user_data.ids_lesoes:
         for lesao_id in user_data.ids_lesoes:
             statement = tb_usuario_lesao.insert().values(
-                id_usuario=novo_usuario.id_usuario, 
+                id_usuario=novo_usuario.id_usuario,
                 id_lesao=lesao_id
             )
             db.execute(statement)
         db.commit()
+
+    gerar_treino_personalizado(db, novo_usuario.id_usuario)
 
     return novo_usuario
 

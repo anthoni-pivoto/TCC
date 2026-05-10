@@ -2,25 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import './register_screen.dart';
-
-// --- TELA TEMPORÁRIA (Para onde vamos após o login) ---
-class HomeScreen extends StatelessWidget {
-  final String nomeUsuario;
-  const HomeScreen({super.key, required this.nomeUsuario});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Treine Se - Início')),
-      body: Center(
-        child: Text(
-          'Bem-vindo(a), $nomeUsuario! Você está logado(a).',
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
+import '../widgets/main_scaffold.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -41,7 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // --- Função de Login ---
   Future<void> _efetuarLogin() async {
-    final String apiUrl = "http://192.168.1.106:8000/api/usuarios/login";
+    final String apiUrl = "http://192.168.0.12:8000/api/usuarios/login";
 
     Map<String, dynamic> loginData = {
       "em_usuario": _emailController.text.trim(),
@@ -66,7 +48,10 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => HomeScreen(nomeUsuario: usuarioLogado['nm_usuario']),
+              builder: (context) => MainScaffold(
+                idUsuario: usuarioLogado['id_usuario'],
+                nomeUsuario: usuarioLogado['nm_usuario'],
+              ),
             ),
           );
 

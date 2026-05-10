@@ -1,8 +1,8 @@
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from models.treino_model import TreinoDB, TreinoExercicioDB
 from models.exercicio_model import ExercicioDB
-from schemas.treino_schema import TreinoCreate
+from schemas.treino_schema import TreinoCreate, TreinoDetalhadoResponse, ExercicioDetalhadoResponse
 
 def criar_treino(db: Session, treino_data: TreinoCreate) -> TreinoDB:
     ids_exercicios = [e.id_exercicio for e in treino_data.exercicios]
@@ -35,6 +35,41 @@ def criar_treino(db: Session, treino_data: TreinoCreate) -> TreinoDB:
     db.commit()
     db.refresh(novo_treino)
     return novo_treino
+
+def buscar_treinos_usuario(db: Session, id_usuario: int) -> list[TreinoDetalhadoResponse]:
+    treinos = (
+        db.query(TreinoDB)
+        .options(
+            joinedload(TreinoDB.exercicios_associados).joinedload(TreinoExercicioDB.exercicio)
+        )
+        .filter(TreinoDB.id_usuario == id_usuario, TreinoDB.st_ativo == True)
+        .order_by(TreinoDB.dia_treino)
+        .all()
+    )
+
+    resultado = []
+    for treino in treinos:
+        exercicios = [
+            ExercicioDetalhadoResponse(
+                id_exercicio=te.id_exercicio,
+                nm_exercicio=te.exercicio.nm_exercicio,
+                grupo_muscular=te.exercicio.grupo_muscular,
+                qtd_series=te.qtd_series,
+                qtd_repeticoes=te.qtd_repeticoes,
+                tempo_descanso_s=te.tempo_descanso_s,
+            )
+            for te in treino.exercicios_associados
+        ]
+        resultado.append(
+            TreinoDetalhadoResponse(
+                id_treino=treino.id_treino,
+                dia_treino=treino.dia_treino,
+                st_ativo=treino.st_ativo,
+                exercicios=exercicios,
+            )
+        )
+    return resultado
+
 
 def gerar_treino_automatico(db: Session, id_usuario: int, objetivo: str):
     # aqui vira logica da geracao dos treinos
