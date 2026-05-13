@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'treino_detalhe_screen.dart';
 
 const String _baseUrl = "http://192.168.0.12:8000";
 
@@ -110,6 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ElevatedButton(
               onPressed: _carregarTreinos,
               style: ElevatedButton.styleFrom(backgroundColor: vintageRed),
+              
               child: const Text('Tentar novamente', style: TextStyle(color: bgCream)),
             ),
           ],
@@ -139,71 +141,51 @@ class _HomeScreenState extends State<HomeScreen> {
         .toSet()
         .toList();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: inkBrown, width: 2.5),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(3, 3))],
-      ),
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-        shape: const Border(),
-        title: Text(
-          'Dia $dia',
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-            color: inkBrown,
-          ),
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TreinoDetalheScreen(treino: treino),
         ),
-        subtitle: Text(
-          '${exercicios.length} exercícios  •  ${gruposUnicos.join(', ')}',
-          style: TextStyle(
-            fontSize: 12,
-            color: inkBrown.withValues(alpha: 0.7),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        iconColor: vintageRed,
-        collapsedIconColor: inkBrown,
-        children: exercicios.map<Widget>((e) => _buildExercicioRow(e)).toList(),
       ),
-    );
-  }
-
-  Widget _buildExercicioRow(Map<String, dynamic> exercicio) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(color: vintageRed, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              exercicio['nm_exercicio'],
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: inkBrown,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: inkBrown, width: 2.5),
+          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(3, 3))],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Dia $dia',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: inkBrown,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${exercicios.length} exercícios  •  ${gruposUnicos.join(', ')}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: inkBrown.withValues(alpha: 0.7),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          Text(
-            '${exercicio['qtd_series']}x${exercicio['qtd_repeticoes']}',
-            style: TextStyle(
-              fontSize: 13,
-              color: inkBrown.withValues(alpha: 0.7),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+            const Icon(Icons.arrow_forward_ios, color: vintageRed, size: 18),
+          ],
+        ),
       ),
     );
   }

@@ -1,0 +1,14 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtualenv
+venv/
+.venv/
+
+# Variáveis de ambiente
+.env
+
+# Chave do Firebase (nunca commitar)
+firebase-key.json

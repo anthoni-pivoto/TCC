@@ -36,6 +36,7 @@ class TreinoResponse(BaseModel):
 class ExercicioDetalhadoResponse(BaseModel):
     id_exercicio: int
     nm_exercicio: str
+    slug_firebase: str
     grupo_muscular: str
     qtd_series: int
     qtd_repeticoes: int

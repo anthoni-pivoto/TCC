@@ -53,6 +53,7 @@ def buscar_treinos_usuario(db: Session, id_usuario: int) -> list[TreinoDetalhado
             ExercicioDetalhadoResponse(
                 id_exercicio=te.id_exercicio,
                 nm_exercicio=te.exercicio.nm_exercicio,
+                slug_firebase=te.exercicio.slug_firebase or '',
                 grupo_muscular=te.exercicio.grupo_muscular,
                 qtd_series=te.qtd_series,
                 qtd_repeticoes=te.qtd_repeticoes,
