@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import './register_screen.dart';
 import '../widgets/main_scaffold.dart';
+import '../config/app_config.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // --- Função de Login ---
   Future<void> _efetuarLogin() async {
-    final String apiUrl = "http://192.168.0.12:8000/api/usuarios/login";
+    final String apiUrl = '$baseUrl/api/usuarios/login';
 
     Map<String, dynamic> loginData = {
       "em_usuario": _emailController.text.trim(),
@@ -41,16 +42,23 @@ class _LoginScreenState extends State<LoginScreen> {
         if (response.statusCode == 200) {
           final usuarioLogado = jsonDecode(response.body);
           
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Login efetuado com sucesso!'), backgroundColor: Colors.green),
-          );
-
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => MainScaffold(
+            PageRouteBuilder(
+              transitionDuration: const Duration(milliseconds: 600),
+              pageBuilder: (_, __, ___) => MainScaffold(
                 idUsuario: usuarioLogado['id_usuario'],
                 nomeUsuario: usuarioLogado['nm_usuario'],
+              ),
+              transitionsBuilder: (_, animation, __, child) => FadeTransition(
+                opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.06),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+                  child: child,
+                ),
               ),
             ),
           );
@@ -186,8 +194,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const RegisterScreen(),
+                    PageRouteBuilder(
+                      transitionDuration: const Duration(milliseconds: 350),
+                      pageBuilder: (_, __, ___) => const RegisterScreen(),
+                      transitionsBuilder: (_, animation, __, child) => SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(1.0, 0.0),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+                        child: child,
+                      ),
                     ),
                   );
                 },

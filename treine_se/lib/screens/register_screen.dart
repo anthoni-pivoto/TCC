@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import '../config/app_config.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -42,7 +43,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final Color vintageRed = const Color(0xFFBC4749);
 
   Future<void> _cadastrarUsuario() async {
-    final String apiUrl = "http://192.168.0.12:8000/api/usuarios/";
+    final String apiUrl = '$baseUrl/api/usuarios/';
 
     Map<String, dynamic> userData = {
       "nm_usuario": _nameController.text,
@@ -65,17 +66,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (mounted) {
         if (response.statusCode == 200 || response.statusCode == 201) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cadastrado com sucesso!')),
-          );
-          Navigator.pop(context);
+          await _mostrarSucesso();
+          if (mounted) Navigator.pop(context);
         } else {
-          print("Erro: ${response.body}");
+          debugPrint("Erro: ${response.body}");
         }
       }
     } catch (e) {
-      print("Erro de conexão: $e");
+      debugPrint("Erro de conexão: $e");
     }
+  }
+
+  Future<void> _mostrarSucesso() {
+    return showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 500),
+      pageBuilder: (_, __, ___) => const _SuccessDialog(),
+      transitionBuilder: (_, anim, __, child) => ScaleTransition(
+        scale: CurvedAnimation(parent: anim, curve: Curves.elasticOut),
+        child: FadeTransition(opacity: anim, child: child),
+      ),
+    );
   }
 
   // --- HELPER: Função para não repetir o estilo das bordas em todos os campos ---
@@ -84,7 +97,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       labelText: label,
       labelStyle: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.5),
+      fillColor: Colors.white.withValues(alpha: 0.5),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: inkBrown, width: 2.5),
@@ -262,6 +275,76 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(height: 20),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SuccessDialog extends StatefulWidget {
+  const _SuccessDialog();
+
+  @override
+  State<_SuccessDialog> createState() => _SuccessDialogState();
+}
+
+class _SuccessDialogState extends State<_SuccessDialog> {
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 1800), () {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          width: 260,
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5E6BE),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFF3D2B1F), width: 3),
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 16, offset: Offset(4, 6))],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF4CAF50),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 44),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Cadastro realizado!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF3D2B1F),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Seus treinos foram gerados.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: const Color(0xFF3D2B1F).withValues(alpha: 0.7),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

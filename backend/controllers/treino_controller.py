@@ -72,9 +72,16 @@ def buscar_treinos_usuario(db: Session, id_usuario: int) -> list[TreinoDetalhado
     return resultado
 
 
+def desativar_treinos_usuario(db: Session, id_usuario: int) -> None:
+    db.query(TreinoDB).filter(
+        TreinoDB.id_usuario == id_usuario,
+        TreinoDB.st_ativo == True,
+    ).update({TreinoDB.st_ativo: False})
+    db.commit()
+
+
 def gerar_treino_automatico(db: Session, id_usuario: int, objetivo: str):
-    # aqui vira logica da geracao dos treinos
-    # Exemplo de inserção de cabeçalho de treino:
+
     novo_treino = TreinoDB(id_usuario=id_usuario, dia_treino=1, st_ativo=True)
     db.add(novo_treino)
     db.commit()

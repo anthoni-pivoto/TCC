@@ -30,7 +30,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     super.initState();
     _pages = [
       HomeScreen(idUsuario: widget.idUsuario, nomeUsuario: widget.nomeUsuario),
-      ProfileScreen(nomeUsuario: widget.nomeUsuario),
+      ProfileScreen(idUsuario: widget.idUsuario, nomeUsuario: widget.nomeUsuario),
     ];
   }
 

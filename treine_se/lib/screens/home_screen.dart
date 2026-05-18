@@ -2,8 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'treino_detalhe_screen.dart';
-
-const String _baseUrl = "http://192.168.0.12:8000";
+import '../config/app_config.dart';
 
 class HomeScreen extends StatefulWidget {
   final int idUsuario;
@@ -38,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() { _loading = true; _erro = null; });
     try {
       final response = await http.get(
-        Uri.parse('$_baseUrl/api/treinos/usuario/${widget.idUsuario}'),
+        Uri.parse('$baseUrl/api/treinos/usuario/${widget.idUsuario}'),
       );
       if (response.statusCode == 200) {
         setState(() {
@@ -145,7 +144,10 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => TreinoDetalheScreen(treino: treino),
+          builder: (_) => TreinoDetalheScreen(
+            treino: treino,
+            idUsuario: widget.idUsuario,
+          ),
         ),
       ),
       child: Container(

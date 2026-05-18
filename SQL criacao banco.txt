@@ -127,4 +127,30 @@ ON DELETE NO ACTION
 ON UPDATE NO ACTION
 NOT DEFERRABLE;
 
+---nova coluna para foco (grupo muscular) e nível
+
 ALTER TABLE tb_usuario ADD COLUMN foco VARCHAR;
+
+ALTER TABLE tb_exercicios RENAME COLUMN vid_path TO slug_firebase;
+
+--- nova tabela para fequencia
+
+CREATE TABLE IF NOT EXISTS tb_frequencia (
+    id_frequencia BIGINT PRIMARY KEY,
+    id_usuario BIGINT NOT NULL,
+    dt_registro TIMESTAMP NOT NULL DEFAULT NOW(),
+    treino_completo BOOLEAN NOT NULL DEFAULT FALSE,
+    qtd_exercicios_concluidos INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE SEQUENCE public.tb_frequencia_id_freq_seq;
+
+ALTER SEQUENCE public.tb_frequencia_id_freq_seq OWNED BY public.tb_frequencia.id_frequencia;
+
+ALTER TABLE public.tb_frequencia ADD CONSTRAINT tb_usuario_tb_frequencia_fk
+FOREIGN KEY (id_usuario)
+REFERENCES public.tb_usuario (id_usuario)
+ON DELETE NO ACTION
+ON UPDATE NO ACTION
+NOT DEFERRABLE;
+

@@ -16,5 +16,6 @@ class UsuarioDB(Base):
     altura = Column(REAL)
     foco = Column(VARCHAR) 
 
-    lesoes = relationship("LesaoDB", secondary=tb_usuario_lesao, back_populates="usuarios")
-    treinos = relationship("TreinoDB", back_populates="usuario")
+    lesoes     = relationship("LesaoDB", secondary=tb_usuario_lesao, back_populates="usuarios")
+    treinos    = relationship("TreinoDB", back_populates="usuario")
+    frequencias = relationship("FrequenciaDB", back_populates="usuario")

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from models.base import Base
 from database import engine
-from views import usuario_view, treino_view, exercicio_view
+from views import usuario_view, treino_view, exercicio_view, frequencia_view
 
 # 1. Instancia o FastAPI
 app = FastAPI()
@@ -20,6 +20,7 @@ app.add_middleware(
 app.include_router(usuario_view.router, prefix="/api")
 app.include_router(treino_view.router, prefix="/api")
 app.include_router(exercicio_view.router, prefix="/api")
+app.include_router(frequencia_view.router, prefix="/api")
 
 @app.get("/")
 def home():
