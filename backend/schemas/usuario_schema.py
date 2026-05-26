@@ -30,6 +30,7 @@ class UsuarioPerfilResponse(BaseModel):
     foco: Optional[str]
     peso: Optional[float]
     altura: Optional[float]
+    ids_lesoes: List[int] = []
 
     class Config:
         from_attributes = True
@@ -44,3 +45,4 @@ class UsuarioPreferenciasUpdate(BaseModel):
     foco: Optional[str] = None
     peso: Optional[float] = None
     altura: Optional[float] = None
+    ids_lesoes: Optional[List[int]] = None

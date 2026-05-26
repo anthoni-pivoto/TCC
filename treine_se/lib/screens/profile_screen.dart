@@ -32,24 +32,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<_PerfilData> _carregarDados() async {
-    final resUsuario = await http.get(
-      Uri.parse('$baseUrl/api/usuarios/${widget.idUsuario}'),
-    );
-    final resFrequencia = await http.get(
-      Uri.parse('$baseUrl/api/frequencias/usuario/${widget.idUsuario}/semanal'),
-    );
+    final results = await Future.wait([
+      http.get(Uri.parse('$baseUrl/api/usuarios/${widget.idUsuario}')),
+      http.get(Uri.parse('$baseUrl/api/frequencias/usuario/${widget.idUsuario}/semanal')),
+      http.get(Uri.parse('$baseUrl/api/lesoes/')),
+    ]);
 
-    if (resUsuario.statusCode != 200) throw Exception('Erro ao carregar perfil');
+    if (results[0].statusCode != 200) throw Exception('Erro ao carregar perfil');
 
-    final usuario    = jsonDecode(resUsuario.body) as Map<String, dynamic>;
-    final frequencia = resFrequencia.statusCode == 200
-        ? jsonDecode(resFrequencia.body) as List
+    final usuario    = jsonDecode(results[0].body) as Map<String, dynamic>;
+    final frequencia = results[1].statusCode == 200
+        ? jsonDecode(results[1].body) as List
         : <dynamic>[];
+    final lesoes = results[2].statusCode == 200
+        ? (jsonDecode(results[2].body) as List).cast<Map<String, dynamic>>()
+        : <Map<String, dynamic>>[];
 
-    return _PerfilData(usuario: usuario, frequencia: frequencia);
+    return _PerfilData(usuario: usuario, frequencia: frequencia, lesoes: lesoes);
   }
 
-  Future<void> _abrirEdicaoPreferencias(Map<String, dynamic> u) async {
+  Future<void> _abrirEdicaoPreferencias(Map<String, dynamic> u, List<Map<String, dynamic>> lesoes) async {
     const objetivoOpcoes = {
       'Ganho de Força': 'forca',
       'Definição': 'hipertrofia',
@@ -68,6 +70,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final pesoCtrl = TextEditingController(text: u['peso']?.toString() ?? '');
     final alturaCtrl = TextEditingController(text: u['altura']?.toString() ?? '');
     bool salvando = false;
+    Set<int> selectedLesoes = (u['ids_lesoes'] as List? ?? []).map((e) => e as int).toSet();
+    final nenhumaId = lesoes.isNotEmpty
+        ? (lesoes.firstWhere(
+              (l) => l['nm_lesao'] == 'Nenhuma',
+              orElse: () => {'id_lesao': -1},
+            )['id_lesao'] as int)
+        : -1;
 
     await showModalBottomSheet(
       context: context,
@@ -94,8 +103,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           );
 
+          Widget buildLesoesPicker() => Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: lesoes.map((l) {
+              final id = l['id_lesao'] as int;
+              final nome = l['nm_lesao'] as String;
+              final sel = selectedLesoes.contains(id);
+              return FilterChip(
+                label: Text(
+                  nome,
+                  style: TextStyle(
+                    color: sel ? bgCream : inkBrown,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
+                ),
+                selected: sel,
+                onSelected: (val) => setLocal(() {
+                  if (id == nenhumaId) {
+                    selectedLesoes.clear();
+                    if (val) { selectedLesoes.add(id); }
+                  } else {
+                    selectedLesoes.remove(nenhumaId);
+                    if (val) { selectedLesoes.add(id); }
+                    else { selectedLesoes.remove(id); }
+                  }
+                }),
+                selectedColor: vintageRed,
+                backgroundColor: Colors.white.withValues(alpha: 0.5),
+                side: BorderSide(
+                  color: sel ? inkBrown : inkBrown.withValues(alpha: 0.3),
+                  width: 1.5,
+                ),
+                checkmarkColor: bgCream,
+                showCheckmark: false,
+              );
+            }).toList(),
+          );
+
           Future<void> salvar() async {
             setLocal(() => salvando = true);
+            bool fechou = false;
             try {
               final body = <String, dynamic>{};
               if (objetivo != null) body['objetivo'] = objetivo;
@@ -105,6 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final a = double.tryParse(alturaCtrl.text);
               if (p != null) body['peso'] = p;
               if (a != null) body['altura'] = a;
+              body['ids_lesoes'] = selectedLesoes.toList();
 
               final resp = await http.put(
                 Uri.parse('$baseUrl/api/usuarios/${widget.idUsuario}'),
@@ -115,6 +165,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (!ctx.mounted) return;
 
               if (resp.statusCode == 200) {
+                fechou = true;
                 Navigator.of(ctx).pop();
                 if (mounted) {
                   setState(() => _future = _carregarDados());
@@ -130,14 +181,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SnackBar(content: Text('Erro ao salvar.'), backgroundColor: vintageRed),
                 );
               }
-            } catch (_) {
+            } catch (e) {
+              debugPrint('ERRO ao salvar preferências: $e');
               if (ctx.mounted) {
                 ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(content: Text('Sem conexão.'), backgroundColor: vintageRed),
+                  SnackBar(content: Text('Erro: $e'), backgroundColor: vintageRed),
                 );
               }
             } finally {
-              if (ctx.mounted) setLocal(() => salvando = false);
+              if (!fechou && ctx.mounted) setLocal(() => salvando = false);
             }
           }
 
@@ -221,6 +273,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Lesões / Restrições',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: inkBrown),
+                  ),
+                  const SizedBox(height: 8),
+                  buildLesoesPicker(),
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: salvando ? null : salvar,
@@ -246,8 +305,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
 
-    pesoCtrl.dispose();
-    alturaCtrl.dispose();
   }
 
   @override
@@ -270,7 +327,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildHeader(dados.usuario),
+                _buildHeader(dados.usuario, dados.lesoes),
                 _buildInfoCards(dados.usuario),
                 _buildGrafico(dados.frequencia),
                 const SizedBox(height: 32),
@@ -284,7 +341,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ── Header com avatar e nome ──────────────────────────────────────────────
 
-  Widget _buildHeader(Map<String, dynamic> u) {
+  Widget _buildHeader(Map<String, dynamic> u, List<Map<String, dynamic>> lesoes) {
     final iniciais = (u['nm_usuario'] as String)
         .trim()
         .split(' ')
@@ -325,7 +382,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               IconButton(
                 icon: const Icon(Icons.tune, color: inkBrown, size: 22),
                 tooltip: 'Editar preferências',
-                onPressed: () => _abrirEdicaoPreferencias(u),
+                onPressed: () => _abrirEdicaoPreferencias(u, lesoes),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
@@ -572,5 +629,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 class _PerfilData {
   final Map<String, dynamic> usuario;
   final List frequencia;
-  const _PerfilData({required this.usuario, required this.frequencia});
+  final List<Map<String, dynamic>> lesoes;
+  const _PerfilData({required this.usuario, required this.frequencia, required this.lesoes});
 }

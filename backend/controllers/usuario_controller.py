@@ -45,6 +45,7 @@ def atualizar_preferencias(db: Session, id_usuario: int, dados: UsuarioPreferenc
 
     _CAMPOS_TREINO = {'qtd_dias', 'foco', 'objetivo'}
     update_data = dados.model_dump(exclude_none=True)
+    ids_lesoes = update_data.pop('ids_lesoes', None)
 
     regerar = any(
         campo in _CAMPOS_TREINO and getattr(usuario, campo) != valor
@@ -56,6 +57,18 @@ def atualizar_preferencias(db: Session, id_usuario: int, dados: UsuarioPreferenc
 
     db.commit()
     db.refresh(usuario)
+
+    if ids_lesoes is not None:
+        current_ids = {l.id_lesao for l in usuario.lesoes}
+        if set(ids_lesoes) != current_ids:
+            regerar = True
+        db.execute(
+            tb_usuario_lesao.delete().where(tb_usuario_lesao.c.id_usuario == id_usuario)
+        )
+        for lesao_id in ids_lesoes:
+            db.execute(tb_usuario_lesao.insert().values(id_usuario=id_usuario, id_lesao=lesao_id))
+        db.commit()
+        db.refresh(usuario)
 
     if regerar:
         desativar_treinos_usuario(db, id_usuario)

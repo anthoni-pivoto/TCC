@@ -92,10 +92,11 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
           const SnackBar(content: Text('Erro ao registrar treino.'), backgroundColor: vintageRed),
         );
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('ERRO ao registrar treino: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sem conexão com o servidor.'), backgroundColor: vintageRed),
+          SnackBar(content: Text('Erro: $e'), backgroundColor: vintageRed),
         );
       }
     } finally {

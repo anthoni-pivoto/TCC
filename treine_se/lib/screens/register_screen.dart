@@ -42,6 +42,86 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final Color inkBrown = const Color(0xFF3D2B1F);
   final Color vintageRed = const Color(0xFFBC4749);
 
+  List<Map<String, dynamic>> _lesoes = [];
+  final Set<int> _selectedLesoes = {};
+  bool _loadingLesoes = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarLesoes();
+  }
+
+  Future<void> _carregarLesoes() async {
+    try {
+      final resp = await http.get(Uri.parse('$baseUrl/api/lesoes/'));
+      if (resp.statusCode == 200 && mounted) {
+        setState(() {
+          _lesoes = (jsonDecode(resp.body) as List).cast<Map<String, dynamic>>();
+          _loadingLesoes = false;
+        });
+      } else if (mounted) {
+        setState(() => _loadingLesoes = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingLesoes = false);
+    }
+  }
+
+  Widget _buildLesoesPicker() {
+    if (_loadingLesoes) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Center(child: CircularProgressIndicator(color: vintageRed, strokeWidth: 2)),
+      );
+    }
+    final nenhumaId = _lesoes.isNotEmpty
+        ? (_lesoes.firstWhere(
+              (l) => l['nm_lesao'] == 'Nenhuma',
+              orElse: () => {'id_lesao': -1},
+            )['id_lesao'] as int)
+        : -1;
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _lesoes.map((l) {
+        final id = l['id_lesao'] as int;
+        final nome = l['nm_lesao'] as String;
+        final selected = _selectedLesoes.contains(id);
+        return FilterChip(
+          label: Text(
+            nome,
+            style: TextStyle(
+              color: selected ? bgCream : inkBrown,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+            ),
+          ),
+          selected: selected,
+          onSelected: (val) => setState(() {
+            if (id == nenhumaId) {
+              _selectedLesoes.clear();
+              if (val) { _selectedLesoes.add(id); }
+            } else {
+              _selectedLesoes.remove(nenhumaId);
+              if (val) { _selectedLesoes.add(id); }
+              else { _selectedLesoes.remove(id); }
+            }
+          }),
+          selectedColor: vintageRed,
+          backgroundColor: Colors.white.withValues(alpha: 0.5),
+          side: BorderSide(
+            color: selected ? inkBrown : inkBrown.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+          checkmarkColor: bgCream,
+          showCheckmark: false,
+        );
+      }).toList(),
+    );
+  }
+
   Future<void> _cadastrarUsuario() async {
     final String apiUrl = '$baseUrl/api/usuarios/';
 
@@ -54,7 +134,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       "peso": double.tryParse(_weightController.text) ?? 0.0,
       "altura": double.tryParse(_heightController.text) ?? 0.0,
       "foco": _selectedFocus,
-      "ids_lesoes": [] 
+      "ids_lesoes": _selectedLesoes.toList(),
     };
 
     try {
@@ -249,6 +329,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
               },
             ),
 
+            const SizedBox(height: 24),
+            Text(
+              'Lesões / Restrições',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: inkBrown),
+            ),
+            Text(
+              'Selecione caso tenha alguma lesão ou restrição',
+              style: TextStyle(fontSize: 11, color: inkBrown.withValues(alpha: 0.6)),
+            ),
+            const SizedBox(height: 8),
+            _buildLesoesPicker(),
             const SizedBox(height: 40),
 
             // --- BOTÃO DE CADASTRO VINTAGE ---

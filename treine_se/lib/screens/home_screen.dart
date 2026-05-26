@@ -48,7 +48,8 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() { _erro = 'Erro ao carregar treinos.'; _loading = false; });
       }
     } catch (e) {
-      setState(() { _erro = 'Sem conexão com o servidor.'; _loading = false; });
+      debugPrint('ERRO ao carregar treinos: $e');
+      setState(() { _erro = 'Erro: $e'; _loading = false; });
     }
   }
 
