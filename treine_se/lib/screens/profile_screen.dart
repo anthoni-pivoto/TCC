@@ -168,7 +168,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 fechou = true;
                 Navigator.of(ctx).pop();
                 if (mounted) {
-                  setState(() => _future = _carregarDados());
+                  setState(() { _future = _carregarDados(); });
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Preferências atualizadas!'),
