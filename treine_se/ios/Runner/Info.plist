@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCalendarsUsageDescription</key>
+	<string>O app precisa acessar o calendário para agendar seus treinos semanais.</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>O app precisa adicionar seus treinos semanais ao calendário.</string>
 </dict>
 </plist>

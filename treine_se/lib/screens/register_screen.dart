@@ -38,9 +38,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final List<int> _daysOptions = [2, 3, 4, 5];
 
   // --- Paleta de Cores Vintage ---
-  final Color bgCream = const Color(0xFFF5E6BE);
-  final Color inkBrown = const Color(0xFF3D2B1F);
-  final Color vintageRed = const Color(0xFFBC4749);
+  final Color bgCream = const Color(0xFFEDF2F7);
+  final Color inkBrown = const Color(0xFF2D4F6B);
+  final Color vintageRed = const Color(0xFF7B9EC5);
 
   List<Map<String, dynamic>> _lesoes = [];
   final Set<int> _selectedLesoes = {};
@@ -397,9 +397,9 @@ class _SuccessDialogState extends State<_SuccessDialog> {
           width: 260,
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: const Color(0xFFF5E6BE),
+            color: const Color(0xFFEDF2F7),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFF3D2B1F), width: 3),
+            border: Border.all(color: const Color(0xFF2D4F6B), width: 3),
             boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 16, offset: Offset(4, 6))],
           ),
           child: Column(
@@ -421,7 +421,7 @@ class _SuccessDialogState extends State<_SuccessDialog> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF3D2B1F),
+                  color: Color(0xFF2D4F6B),
                 ),
               ),
               const SizedBox(height: 8),
@@ -430,7 +430,7 @@ class _SuccessDialogState extends State<_SuccessDialog> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
-                  color: const Color(0xFF3D2B1F).withValues(alpha: 0.7),
+                  color: const Color(0xFF2D4F6B).withValues(alpha: 0.7),
                   fontWeight: FontWeight.w600,
                 ),
               ),

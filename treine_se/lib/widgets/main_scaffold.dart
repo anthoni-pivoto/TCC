@@ -19,9 +19,9 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
 
-  static const Color inkBrown = Color(0xFF3D2B1F);
-  static const Color bgCream  = Color(0xFFF5E6BE);
-  static const Color vintageRed = Color(0xFFBC4749);
+  static const Color inkBrown = Color(0xFF2D4F6B);
+  static const Color bgCream  = Color(0xFFEDF2F7);
+  static const Color vintageRed = Color(0xFF7B9EC5);
 
   late final List<Widget> _pages;
 

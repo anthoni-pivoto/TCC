@@ -20,9 +20,9 @@ class TreinoDetalheScreen extends StatefulWidget {
 }
 
 class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
-  static const Color bgCream    = Color(0xFFF5E6BE);
-  static const Color inkBrown   = Color(0xFF3D2B1F);
-  static const Color vintageRed = Color(0xFFBC4749);
+  static const Color bgCream    = Color(0xFFEDF2F7);
+  static const Color inkBrown   = Color(0xFF2D4F6B);
+  static const Color vintageRed = Color(0xFF7B9EC5);
   static const Color greenCheck = Color(0xFF4CAF50);
 
   late Future<Map<String, Map<String, dynamic>>> _firestoreFuture;
@@ -733,9 +733,9 @@ class _WelcomeDialogState extends State<_WelcomeDialog> {
           width: 280,
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: const Color(0xFFF5E6BE),
+            color: const Color(0xFFEDF2F7),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFF3D2B1F), width: 3),
+            border: Border.all(color: const Color(0xFF2D4F6B), width: 3),
             boxShadow: const [
               BoxShadow(color: Colors.black38, blurRadius: 20, offset: Offset(4, 8))
             ],
@@ -747,15 +747,15 @@ class _WelcomeDialogState extends State<_WelcomeDialog> {
                 width: 80,
                 height: 80,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFBC4749), shape: BoxShape.circle),
-                child: const Icon(Icons.fitness_center, color: Color(0xFFF5E6BE), size: 44),
+                  color: Color(0xFF7B9EC5), shape: BoxShape.circle),
+                child: const Icon(Icons.fitness_center, color: Color(0xFFEDF2F7), size: 44),
               ),
               const SizedBox(height: 20),
               const Text(
                 'Bora treinar!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF3D2B1F)),
+                  fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF2D4F6B)),
               ),
               const SizedBox(height: 8),
               Text(
@@ -764,7 +764,7 @@ class _WelcomeDialogState extends State<_WelcomeDialog> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF3D2B1F).withValues(alpha: 0.75),
+                  color: const Color(0xFF2D4F6B).withValues(alpha: 0.75),
                 ),
               ),
             ],
@@ -810,9 +810,9 @@ class _WorkoutSuccessDialogState extends State<_WorkoutSuccessDialog> {
           width: 280,
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: const Color(0xFFF5E6BE),
+            color: const Color(0xFFEDF2F7),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFF3D2B1F), width: 3),
+            border: Border.all(color: const Color(0xFF2D4F6B), width: 3),
             boxShadow: const [
               BoxShadow(color: Colors.black38, blurRadius: 20, offset: Offset(4, 8))
             ],
@@ -825,13 +825,13 @@ class _WorkoutSuccessDialogState extends State<_WorkoutSuccessDialog> {
                 height: 80,
                 decoration: BoxDecoration(
                   color: widget.completo
-                      ? const Color(0xFFBC4749)
-                      : const Color(0xFF3D2B1F),
+                      ? const Color(0xFF7B9EC5)
+                      : const Color(0xFF2D4F6B),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   widget.completo ? Icons.emoji_events : Icons.check,
-                  color: const Color(0xFFF5E6BE),
+                  color: const Color(0xFFEDF2F7),
                   size: 48,
                 ),
               ),
@@ -840,7 +840,7 @@ class _WorkoutSuccessDialogState extends State<_WorkoutSuccessDialog> {
                 widget.completo ? 'Treino Completo!' : 'Treino Registrado!',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF3D2B1F)),
+                  fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF2D4F6B)),
               ),
               const SizedBox(height: 8),
               Text(
@@ -849,7 +849,7 @@ class _WorkoutSuccessDialogState extends State<_WorkoutSuccessDialog> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF3D2B1F).withValues(alpha: 0.7),
+                  color: const Color(0xFF2D4F6B).withValues(alpha: 0.7),
                 ),
               ),
             ],

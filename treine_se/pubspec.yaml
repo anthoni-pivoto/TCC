@@ -38,6 +38,9 @@ dependencies:
   fl_chart: ^0.70.2
   flutter_dotenv: ^5.2.0
   flutter_local_notifications: ^18.0.0
+  device_calendar: ^4.3.1
+  timezone: ^0.9.4
+  flutter_timezone: ^1.0.4
 
 dev_dependencies:
   flutter_test:

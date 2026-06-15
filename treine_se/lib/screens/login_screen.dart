@@ -17,10 +17,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
 
   // --- Paleta de Cores Vintage ---
-  final Color bgCream = const Color(0xFFF5E6BE);
-  final Color inkBrown = const Color(0xFF3D2B1F);
-  final Color vintageRed = const Color(0xFFBC4749);
-  final Color vintageBlue = const Color(0xFF457B9D);
+  final Color bgCream = const Color(0xFFEDF2F7);
+  final Color inkBrown = const Color(0xFF2D4F6B);
+  final Color vintageRed = const Color(0xFF7B9EC5);
+  final Color vintageBlue = const Color(0xFF4A7BA8);
 
   // --- Função de Login ---
   Future<void> _efetuarLogin() async {
