@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import '../services/notification_service.dart';
 
 class TreinoDetalheScreen extends StatefulWidget {
   final Map<String, dynamic> treino;
@@ -33,13 +33,11 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
   final Map<int, Timer> _timers        = {};
   bool _registrando = false;
 
-  final _notifPlugin = FlutterLocalNotificationsPlugin();
-
   @override
   void initState() {
     super.initState();
     _firestoreFuture = _carregarDadosFirestore();
-    _inicializarNotificacoes();
+    NotificationService.cancelarInatividade();
     WidgetsBinding.instance.addPostFrameCallback((_) => _mostrarBoasVindas());
   }
 
@@ -49,51 +47,6 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
       t.cancel();
     }
     super.dispose();
-  }
-
-  // ── Notificações ──────────────────────────────────────────────────────────
-
-  Future<void> _inicializarNotificacoes() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: false,
-      requestSoundPermission: true,
-    );
-    await _notifPlugin.initialize(
-      const InitializationSettings(android: androidSettings, iOS: iosSettings),
-    );
-
-    final android = _notifPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    await android?.requestNotificationsPermission();
-    await android?.createNotificationChannel(
-      const AndroidNotificationChannel(
-        'descanso_channel',
-        'Descanso entre séries',
-        description: 'Avisa quando o tempo de descanso terminar',
-        importance: Importance.high,
-        playSound: true,
-      ),
-    );
-  }
-
-  Future<void> _notificarDescansoEncerrado(String nomeExercicio) async {
-    await _notifPlugin.show(
-      0,
-      'Descansou! 💪',
-      'Hora da próxima série — $nomeExercicio',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'descanso_channel',
-          'Descanso entre séries',
-          channelDescription: 'Avisa quando o tempo de descanso terminar',
-          importance: Importance.high,
-          priority: Priority.high,
-          playSound: true,
-        ),
-      ),
-    );
   }
 
   // ── Timer ─────────────────────────────────────────────────────────────────
@@ -109,7 +62,7 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
         _timers.remove(index);
         if (mounted) {
           setState(() => _timerSegundos[index] = 0);
-          _notificarDescansoEncerrado(nomeExercicio);
+          NotificationService.notificarDescansoEncerrado(nomeExercicio);
         }
       } else {
         if (mounted) setState(() => _timerSegundos[index] = restante);
@@ -188,6 +141,7 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
       );
       if (!mounted) return;
       if (response.statusCode == 201) {
+        await NotificationService.agendarInatividade();
         await _mostrarSucessoTreino(completo: completo, qtd: qtdConcluidos, total: exercicios.length);
         if (mounted) Navigator.pop(context);
       } else {

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'treino_detalhe_screen.dart';
 import '../config/app_config.dart';
 import '../services/calendar_service.dart';
+import '../services/notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final int idUsuario;
@@ -199,6 +200,11 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       if (!mounted) return;
       if (sucesso) {
+        await NotificationService.agendarLembretesTreino(
+          treinos: _treinos.cast<Map<String, dynamic>>(),
+          horario: horario,
+        );
+        if (!mounted) return;
         setState(() => _mostrarBanner = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

@@ -4,6 +4,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import 'screens/login_screen.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +12,7 @@ void main() async {
   tzdata.initializeTimeZones();
   final String localTimezone = await FlutterTimezone.getLocalTimezone();
   tz.setLocalLocation(tz.getLocation(localTimezone));
+  await NotificationService.inicializar();
   runApp(const MyApp());
 }
 
