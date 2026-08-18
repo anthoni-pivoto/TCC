@@ -154,3 +154,10 @@ ON DELETE NO ACTION
 ON UPDATE NO ACTION
 NOT DEFERRABLE;
 
+--- auditoria de origem do treino (motor de regras x IA)
+
+ALTER TABLE tb_treino ADD COLUMN origem VARCHAR NOT NULL DEFAULT 'regra';
+ALTER TABLE tb_treino ADD COLUMN dt_criacao TIMESTAMP NOT NULL DEFAULT NOW();
+
+COMMENT ON COLUMN tb_treino.origem IS 'quem gerou o treino: regra (motor deterministico) ou ia';
+

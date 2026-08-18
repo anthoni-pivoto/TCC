@@ -4,10 +4,14 @@ from utils.auth_utils import get_password_hash, verify_password
 from models.usuario_model import UsuarioDB
 from models.associativas import tb_usuario_lesao
 from schemas.usuario_schema import UsuarioCreate, UsuarioLogin, UsuarioPreferenciasUpdate
-from services.treino_service import gerar_treino_personalizado
 from controllers.treino_controller import desativar_treinos_usuario
 
+# ia_treino_service importa deste pacote, então o import dele é feito dentro das
+# funções para não fechar um ciclo em tempo de carga.
+
 def cadastrar_novo_usuario(db: Session, user_data: UsuarioCreate):
+    from services.ia_treino_service import gerar_treino_ia
+
     senha_criptografada = get_password_hash(user_data.pwd_usuario)
     
     novo_usuario = UsuarioDB(
@@ -34,11 +38,13 @@ def cadastrar_novo_usuario(db: Session, user_data: UsuarioCreate):
             db.execute(statement)
         db.commit()
 
-    gerar_treino_personalizado(db, novo_usuario.id_usuario)
+    gerar_treino_ia(db, novo_usuario.id_usuario)
 
     return novo_usuario
 
 def atualizar_preferencias(db: Session, id_usuario: int, dados: UsuarioPreferenciasUpdate) -> UsuarioDB:
+    from services.ia_treino_service import gerar_treino_ia
+
     usuario = db.query(UsuarioDB).filter(UsuarioDB.id_usuario == id_usuario).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
@@ -72,7 +78,7 @@ def atualizar_preferencias(db: Session, id_usuario: int, dados: UsuarioPreferenc
 
     if regerar:
         desativar_treinos_usuario(db, id_usuario)
-        gerar_treino_personalizado(db, id_usuario)
+        gerar_treino_ia(db, id_usuario)
 
     return usuario
 

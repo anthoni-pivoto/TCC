@@ -15,6 +15,6 @@ def get_treinos_usuario(id_usuario: int, db: Session = Depends(get_db)):
 def post_criar_treino(treino: TreinoCreate, db: Session = Depends(get_db)):
     return treino_controller.criar_treino(db, treino)
 
-@router.post("/gerar/{id_usuario}")
-def post_gerar_treino(id_usuario: int, objetivo: str, db: Session = Depends(get_db)):
-    return treino_controller.gerar_treino_automatico(db, id_usuario, objetivo)
+@router.post("/gerar/{id_usuario}", response_model=List[TreinoDetalhadoResponse], status_code=201)
+def post_gerar_treino(id_usuario: int, db: Session = Depends(get_db)):
+    return treino_controller.gerar_treino_automatico(db, id_usuario)

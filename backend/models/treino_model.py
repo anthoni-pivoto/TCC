@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, Integer, ForeignKey, Boolean
+from sqlalchemy import Column, BigInteger, Integer, ForeignKey, Boolean, VARCHAR, TIMESTAMP, func
 from sqlalchemy.orm import relationship
 from models.base import Base
 
@@ -19,6 +19,8 @@ class TreinoDB(Base):
     id_usuario = Column(BigInteger, ForeignKey('tb_usuario.id_usuario'), nullable=False)
     dia_treino = Column(Integer, nullable=False)
     st_ativo = Column(Boolean, default=True, nullable=False)
+    origem = Column(VARCHAR, nullable=False, server_default='regra')
+    dt_criacao = Column(TIMESTAMP, nullable=False, server_default=func.now())
 
     usuario = relationship("UsuarioDB", back_populates="treinos")
     exercicios_associados = relationship("TreinoExercicioDB", back_populates="treino")

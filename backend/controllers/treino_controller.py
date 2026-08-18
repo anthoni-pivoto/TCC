@@ -4,7 +4,7 @@ from models.treino_model import TreinoDB, TreinoExercicioDB
 from models.exercicio_model import ExercicioDB
 from schemas.treino_schema import TreinoCreate, TreinoDetalhadoResponse, ExercicioDetalhadoResponse
 
-def criar_treino(db: Session, treino_data: TreinoCreate) -> TreinoDB:
+def criar_treino(db: Session, treino_data: TreinoCreate, origem: str = "regra") -> TreinoDB:
     ids_exercicios = [e.id_exercicio for e in treino_data.exercicios]
     exercicios_existentes = db.query(ExercicioDB.id_exercicio).filter(
         ExercicioDB.id_exercicio.in_(ids_exercicios)
@@ -17,7 +17,8 @@ def criar_treino(db: Session, treino_data: TreinoCreate) -> TreinoDB:
     novo_treino = TreinoDB(
         id_usuario=treino_data.id_usuario,
         dia_treino=treino_data.dia_treino,
-        st_ativo=True
+        st_ativo=True,
+        origem=origem
     )
     db.add(novo_treino)
     db.flush()
@@ -80,10 +81,11 @@ def desativar_treinos_usuario(db: Session, id_usuario: int) -> None:
     db.commit()
 
 
-def gerar_treino_automatico(db: Session, id_usuario: int, objetivo: str):
+def gerar_treino_automatico(db: Session, id_usuario: int) -> list[TreinoDetalhadoResponse]:
+    """Descarta a ficha ativa e monta outra pela IA, com fallback para as regras."""
+    # Import tardio: ia_treino_service importa criar_treino deste módulo.
+    from services.ia_treino_service import gerar_treino_ia
 
-    novo_treino = TreinoDB(id_usuario=id_usuario, dia_treino=1, st_ativo=True)
-    db.add(novo_treino)
-    db.commit()
-    db.refresh(novo_treino)
-    return novo_treino
+    desativar_treinos_usuario(db, id_usuario)
+    gerar_treino_ia(db, id_usuario)
+    return buscar_treinos_usuario(db, id_usuario)
