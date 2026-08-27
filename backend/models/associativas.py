@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Column, BigInteger, ForeignKey
+from sqlalchemy import Table, Column, BigInteger, VARCHAR, ForeignKey
 from models.base import Base
 
 tb_usuario_lesao = Table(
@@ -10,5 +10,8 @@ tb_usuario_lesao = Table(
 tb_exercicio_lesao = Table(
     'tb_exercicio_lesao', Base.metadata,
     Column('id_lesao', BigInteger, ForeignKey('tb_lesoes.id_lesao'), primary_key=True),
-    Column('id_exercicio', BigInteger, ForeignKey('tb_exercicios.id_exercicio'), primary_key=True)
+    Column('id_exercicio', BigInteger, ForeignKey('tb_exercicios.id_exercicio'), primary_key=True),
+    # 'bloqueio' = contraindicação absoluta, sai do catálogo antes da IA ver.
+    # 'cautela'  = relativa, permanece no catálogo e vira aviso no prompt.
+    Column('nivel', VARCHAR, nullable=False, server_default='bloqueio')
 )

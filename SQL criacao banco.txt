@@ -161,3 +161,86 @@ ALTER TABLE tb_treino ADD COLUMN dt_criacao TIMESTAMP NOT NULL DEFAULT NOW();
 
 COMMENT ON COLUMN tb_treino.origem IS 'quem gerou o treino: regra (motor deterministico) ou ia';
 
+
+DELETE FROM tb_usuario_lesao WHERE id_lesao = 99;
+DELETE FROM tb_lesoes WHERE id_lesao = 99 AND nm_lesao = 'luis fernando';
+
+--- 2. Contraindicacao deixa de ser binaria.
+---    bloqueio = absoluta: o exercicio sai do catalogo antes de chegar na IA.
+---    cautela  = relativa: o exercicio continua disponivel, mas o catalogo
+---               enviado ao modelo carrega o aviso explicito.
+---    Os vinculos que ja existiam viram 'bloqueio' pelo DEFAULT.
+
+ALTER TABLE tb_exercicio_lesao
+    ADD COLUMN nivel VARCHAR NOT NULL DEFAULT 'bloqueio';
+
+ALTER TABLE tb_exercicio_lesao
+    ADD CONSTRAINT tb_exercicio_lesao_nivel_ck
+    CHECK (nivel IN ('bloqueio', 'cautela'));
+
+COMMENT ON COLUMN tb_exercicio_lesao.nivel IS
+    'bloqueio = contraindicacao absoluta (filtro deterministico); cautela = relativa (vai como aviso no prompt)';
+
+--- 3. BLOQUEIOS para as lesoes que hoje nao bloqueiam nada.
+---    RASCUNHO — precisa de revisao de um profissional antes da entrega.
+
+INSERT INTO tb_exercicio_lesao (id_lesao, id_exercicio, nivel) VALUES
+    -- 34 Lesao de Ligamento (LCA/LCP): cadeia aberta com carga e joelho instavel
+    (34, 39, 'bloqueio'),  -- Agachamento Livre
+    (34, 42, 'bloqueio'),  -- Cadeira Extensora
+    (34, 43, 'bloqueio'),  -- Afundo
+
+    -- 48 Pos-Operatorio Recente: compostos pesados e carga axial
+    (48, 39, 'bloqueio'), (48, 40, 'bloqueio'), (48, 41, 'bloqueio'),
+    (48, 43, 'bloqueio'), (48, 46, 'bloqueio'), (48, 51, 'bloqueio'),
+    (48, 52, 'bloqueio'), (48, 57, 'bloqueio'), (48, 67, 'bloqueio'),
+    (48, 71, 'bloqueio'), (48, 72, 'bloqueio'),
+
+    -- 46 Tendinite no Pulso / Tunel do Carpo: carga direta em extensao de punho
+    (46, 60, 'bloqueio'),  -- Rosca Direta Sentado
+    (46, 61, 'bloqueio'),  -- Rosca Scott
+    (46, 64, 'bloqueio'),  -- Triceps Frances
+    (46, 67, 'bloqueio'),  -- Triceps Mergulho
+
+    -- 30 Escoliose Acentuada: compressao axial e carga assimetrica
+    (30, 39, 'bloqueio'),  -- Agachamento Livre
+    (30, 46, 'bloqueio'),  -- Stiff
+    (30, 71, 'bloqueio'),  -- Remada Curvada
+    (30, 72, 'bloqueio')   -- Remada Cavalinho Curvada
+ON CONFLICT (id_lesao, id_exercicio) DO NOTHING;
+
+
+--- 4. CAUTELAS — o exercicio segue no catalogo, com aviso para o modelo.
+---    E aqui que entra o caso que o teste pegou: Afundo com tendinite de
+---    Aquiles nao era bloqueado nem avisado, e o modelo prescreveu.
+
+INSERT INTO tb_exercicio_lesao (id_lesao, id_exercicio, nivel) VALUES
+    -- 26 Hernia de Disco
+    (26, 47, 'cautela'), (26, 57, 'cautela'), (26, 73, 'cautela'),
+    -- 27 Lombalgia
+    (27, 57, 'cautela'), (27, 75, 'cautela'),
+    -- 30 Escoliose Acentuada
+    (30, 40, 'cautela'), (30, 41, 'cautela'), (30, 57, 'cautela'), (30, 73, 'cautela'),
+    -- 31 Lesao no Joelho
+    (31, 40, 'cautela'), (31, 41, 'cautela'), (31, 42, 'cautela'),
+    -- 32 Condromalacia
+    (32, 39, 'cautela'), (32, 42, 'cautela'), (32, 43, 'cautela'),
+    -- 33 Tendinite Patelar
+    (33, 39, 'cautela'), (33, 40, 'cautela'), (33, 41, 'cautela'), (33, 43, 'cautela'),
+    -- 34 Lesao de Ligamento (LCA/LCP)
+    (34, 40, 'cautela'), (34, 41, 'cautela'), (34, 44, 'cautela'), (34, 46, 'cautela'),
+    -- 35 Instabilidade de Tornozelo
+    (35, 39, 'cautela'), (35, 49, 'cautela'), (35, 50, 'cautela'),
+    -- 36 Fascite Plantar
+    (36, 39, 'cautela'), (36, 43, 'cautela'), (36, 50, 'cautela'),
+    -- 37 Tendinite de Aquiles  <-- o caso do teste
+    (37, 39, 'cautela'), (37, 43, 'cautela'), (37, 46, 'cautela'),
+    -- 39 Bursite Trocanterica (Quadril)
+    (39, 43, 'cautela'), (39, 45, 'cautela'), (39, 47, 'cautela'),
+    -- 46 Tendinite no Pulso / Tunel do Carpo (tudo que exige preensao firme)
+    (46, 62, 'cautela'), (46, 63, 'cautela'), (46, 70, 'cautela'),
+    (46, 71, 'cautela'), (46, 72, 'cautela'), (46, 73, 'cautela'),
+    (46, 74, 'cautela'), (46, 75, 'cautela'),
+    -- 48 Pos-Operatorio Recente
+    (48, 47, 'cautela'), (48, 58, 'cautela'), (48, 70, 'cautela'), (48, 74, 'cautela')
+ON CONFLICT (id_lesao, id_exercicio) DO NOTHING;

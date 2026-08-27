@@ -1,0 +1,23 @@
+# Segredos — nunca versionar
+.env
+*.env
+!*.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+backend/venv/
+
+# Flutter / Dart
+treine_se/.dart_tool/
+treine_se/build/
+treine_se/.flutter-plugins*
+*.iml
+
+# Editores / SO
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini

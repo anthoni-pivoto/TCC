@@ -1,10 +1,12 @@
 import logging
 import os
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
+from models.associativas import tb_exercicio_lesao
 from models.usuario_model import UsuarioDB
-from models.exercicio_model import ExercicioDB
+from models.exercicio_model import ExercicioDB, LesaoDB
 from schemas.ia_schema import PlanoTreino
 from schemas.treino_schema import TreinoCreate, TreinoExercicioCreate
 from controllers.treino_controller import criar_treino
@@ -13,7 +15,14 @@ from services.treino_service import gerar_treino_personalizado
 logger = logging.getLogger(__name__)
 
 MODELO_IA = os.getenv("IA_MODEL", "claude-opus-5")
-MAX_TOKENS = 8000  # cobre resposta + thinking, que é ligado por padrão no Opus 5
+
+# O effort só entra na requisição quando IA_EFFORT está definida. Nem todo modelo
+# aceita o parâmetro — o Haiku 4.5 responde 400 se ele vier junto (a Models API
+# reporta effort.supported=False para ele), e um 400 aqui cairia calado no motor
+# de regras, que é justamente o que não queremos enquanto testamos a IA.
+EFFORT_IA = os.getenv("IA_EFFORT") or None
+
+MAX_TOKENS = 8000  # teto, não custo: cobre a resposta e o thinking de quem pensa
 MIN_EXERCICIOS_DIA = 4
 MAX_EXERCICIOS_DIA = 7
 
@@ -32,14 +41,19 @@ Diretrizes de prescrição:
 - Ajuste séries, repetições e descanso ao objetivo: cargas altas e descansos longos
   para força; volume moderado e descansos médios para hipertrofia; repetições altas
   e descansos curtos para emagrecimento e condicionamento.
-- Considere o IMC e as restrições relatadas ao calibrar volume e intensidade. O
-  catálogo já exclui exercícios formalmente contraindicados, mas seja conservador
-  com regiões afetadas por lesões.
+- Considere o IMC ao calibrar volume e intensidade.
 
-O catálogo abaixo já está filtrado para este usuário — tudo que aparece nele é
-seguro de prescrever.
+Sobre as restrições deste usuário:
+- O catálogo já teve removidos os exercícios de contraindicação absoluta. Tudo
+  que aparece nele é permitido.
+- Linhas marcadas com CAUTELA têm contraindicação relativa à lesão citada na
+  própria linha. Use-as apenas quando não houver alternativa para cobrir o grupo
+  muscular, no máximo uma por dia, com carga e volume menores que os do restante
+  do treino, e nunca como primeiro exercício do dia.
+- Na justificativa, cite apenas lesões que constam no perfil do usuário. Não
+  mencione lesões que ele não relatou.
 
-CATÁLOGO (id | nome | grupo muscular):
+CATÁLOGO (id | nome | grupo muscular | restrições):
 {catalogo}"""
 
 
@@ -75,11 +89,14 @@ def _gerar_com_ia(db: Session, id_usuario: int) -> list:
         raise ValueError(f"Usuário {id_usuario} não encontrado")
 
     qtd_dias = usuario.qtd_dias or 3
-    validos = _exercicios_permitidos(db, usuario)
+    validos, avisos = _exercicios_permitidos(db, usuario)
     if not validos:
         raise ValueError("Nenhum exercício disponível após filtrar as lesões")
 
     ids_validos = {e.id_exercicio for e in validos}
+
+    # dict vazio quando não há effort: assim o parâmetro nem chega na requisição.
+    ajuste_effort = {"output_config": {"effort": EFFORT_IA}} if EFFORT_IA else {}
 
     resposta = Anthropic().messages.parse(
         model=MODELO_IA,
@@ -89,12 +106,13 @@ def _gerar_com_ia(db: Session, id_usuario: int) -> list:
             "text": INSTRUCOES.format(
                 minimo=MIN_EXERCICIOS_DIA,
                 maximo=MAX_EXERCICIOS_DIA,
-                catalogo=_montar_catalogo(validos),
+                catalogo=_montar_catalogo(validos, avisos),
             ),
             "cache_control": {"type": "ephemeral"},
         }],
         messages=[{"role": "user", "content": _montar_perfil(usuario, qtd_dias)}],
         output_format=PlanoTreino,
+        **ajuste_effort,
     )
 
     plano = resposta.parsed_output
@@ -104,29 +122,70 @@ def _gerar_com_ia(db: Session, id_usuario: int) -> list:
     return _persistir(db, id_usuario, plano)
 
 
-def _exercicios_permitidos(db: Session, usuario: UsuarioDB) -> list:
-    """Catálogo do usuário, sem os exercícios contraindicados pelas lesões dele.
+def _contraindicacoes(db: Session, usuario: UsuarioDB) -> tuple[set, dict]:
+    """Separa as contraindicações do usuário nos dois níveis.
+
+    Devolve os ids que saem do catálogo e, para os de cautela, os nomes das
+    lesões que motivam o aviso — é esse texto que o modelo lê.
+    """
+    ids_lesoes = {lesao.id_lesao for lesao in usuario.lesoes}
+    if not ids_lesoes:
+        return set(), {}
+
+    linhas = db.execute(
+        select(
+            tb_exercicio_lesao.c.id_exercicio,
+            tb_exercicio_lesao.c.nivel,
+            LesaoDB.nm_lesao,
+        )
+        .join(LesaoDB, LesaoDB.id_lesao == tb_exercicio_lesao.c.id_lesao)
+        .where(tb_exercicio_lesao.c.id_lesao.in_(ids_lesoes))
+        .order_by(tb_exercicio_lesao.c.id_exercicio, LesaoDB.nm_lesao)
+    ).all()
+
+    bloqueados = {linha.id_exercicio for linha in linhas if linha.nivel == "bloqueio"}
+    avisos = {}
+    for linha in linhas:
+        # Exercício bloqueado por outra lesão não precisa de aviso: não chega ao
+        # catálogo de qualquer forma.
+        if linha.nivel == "cautela" and linha.id_exercicio not in bloqueados:
+            avisos.setdefault(linha.id_exercicio, []).append(linha.nm_lesao)
+    return bloqueados, avisos
+
+
+def _exercicios_permitidos(db: Session, usuario: UsuarioDB) -> tuple[list, dict]:
+    """Catálogo do usuário, sem os exercícios de contraindicação absoluta.
 
     A ordenação é fixa de propósito: o catálogo entra no bloco com cache_control,
     e o cache da API é casamento de prefixo byte a byte.
     """
-    ids_lesoes = {lesao.id_lesao for lesao in usuario.lesoes}
+    bloqueados, avisos = _contraindicacoes(db, usuario)
     todos = (
         db.query(ExercicioDB)
-        .options(joinedload(ExercicioDB.lesoes_contraindicadas))
         .order_by(ExercicioDB.grupo_muscular, ExercicioDB.id_exercicio)
         .all()
     )
-    return [
-        e for e in todos
-        if not any(l.id_lesao in ids_lesoes for l in e.lesoes_contraindicadas)
-    ]
+    validos = [e for e in todos if e.id_exercicio not in bloqueados]
+
+    zerados = {e.grupo_muscular for e in todos} - {e.grupo_muscular for e in validos}
+    if zerados:
+        # Não impede a geração, mas se o foco do usuário for um desses grupos a
+        # ficha sai torta e o log explica o porquê.
+        logger.warning(
+            "Usuário %s: as lesões zeraram os grupos %s",
+            usuario.id_usuario, sorted(zerados),
+        )
+    return validos, avisos
 
 
-def _montar_catalogo(exercicios: list) -> str:
-    return "\n".join(
-        f"{e.id_exercicio} | {e.nm_exercicio} | {e.grupo_muscular}" for e in exercicios
-    )
+def _montar_catalogo(exercicios: list, avisos: dict) -> str:
+    linhas = []
+    for e in exercicios:
+        linha = f"{e.id_exercicio} | {e.nm_exercicio} | {e.grupo_muscular}"
+        if e.id_exercicio in avisos:
+            linha += " | CAUTELA: " + ", ".join(avisos[e.id_exercicio])
+        linhas.append(linha)
+    return "\n".join(linhas)
 
 
 def _montar_perfil(usuario: UsuarioDB, qtd_dias: int) -> str:
