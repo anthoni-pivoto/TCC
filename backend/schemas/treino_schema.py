@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 class TreinoExercicioCreate(BaseModel):
     id_exercicio: int
@@ -46,4 +46,8 @@ class TreinoDetalhadoResponse(BaseModel):
     id_treino: int
     dia_treino: int
     st_ativo: bool
+    origem: str
+    # NULL nos treinos do motor de regras — o app usa isso para decidir se
+    # mostra ou nao o bloco de explicacao.
+    justificativa: Optional[str] = None
     exercicios: List[ExercicioDetalhadoResponse]

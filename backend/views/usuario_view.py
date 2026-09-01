@@ -15,6 +15,19 @@ def criar_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao cadastrar: {str(e)}")
     
+@router.get("/{id_usuario}/restricoes")
+def get_restricoes_usuario(id_usuario: int, db: Session = Depends(get_db)):
+    """Grupos musculares que as lesões do usuário deixaram sem exercício algum.
+
+    Alimenta o aviso fixo nas telas de treinos e perfil: quando o app não tem o
+    que prescrever com segurança para uma região, quem decide o que fazer é um
+    profissional, não o app.
+    """
+    from services.restricoes_service import grupos_sem_exercicio
+
+    return {"grupos_sem_exercicio": grupos_sem_exercicio(db, id_usuario)}
+
+
 @router.post("/login", response_model=UsuarioResponse)
 def login_usuario(login_data: UsuarioLogin, db: Session = Depends(get_db)):
     usuario_logado = usuario_controller.autenticar_usuario(db, login_data)

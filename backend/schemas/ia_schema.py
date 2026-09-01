@@ -1,5 +1,5 @@
-from pydantic import BaseModel, ConfigDict, Field
-from typing import List
+from pydantic import BaseModel, ConfigDict, Field, create_model
+from typing import Annotated, List
 
 # Contrato de saída da IA. Este schema é convertido em JSON Schema e enviado à
 # API, que obriga a resposta a obedecê-lo — não há texto livre para parsear.
@@ -46,3 +46,31 @@ class PlanoTreino(BaseModel):
         )
     )
     dias: List[DiaTreino]
+
+
+def plano_com_dias(qtd_dias: int) -> type[PlanoTreino]:
+    """Devolve uma variação de PlanoTreino que aceita exatamente qtd_dias dias.
+
+    A quantidade muda por usuário, então não dá para fixá-la na classe. Sem este
+    limite o pedido vira só texto no prompt, e o modelo às vezes devolve 7 dias
+    para quem treina 4 — a validação reprovava e o usuário caía no motor de
+    regras. Com min/max no schema, a própria API impede a resposta errada.
+    """
+    return create_model(
+        "PlanoTreino%dDias" % qtd_dias,
+        __base__=PlanoTreino,
+        dias=(
+            Annotated[
+                List[DiaTreino],
+                Field(
+                    min_length=qtd_dias,
+                    max_length=qtd_dias,
+                    description=(
+                        "Exatamente %d dias de treino, numerados de 1 a %d."
+                        % (qtd_dias, qtd_dias)
+                    ),
+                ),
+            ],
+            ...,
+        ),
+    )

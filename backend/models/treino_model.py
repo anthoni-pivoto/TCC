@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, Integer, ForeignKey, Boolean, VARCHAR, TIMESTAMP, func
+from sqlalchemy import Column, BigInteger, Integer, ForeignKey, Boolean, VARCHAR, TEXT, TIMESTAMP, func
 from sqlalchemy.orm import relationship
 from models.base import Base
 
@@ -21,6 +21,8 @@ class TreinoDB(Base):
     st_ativo = Column(Boolean, default=True, nullable=False)
     origem = Column(VARCHAR, nullable=False, server_default='regra')
     dt_criacao = Column(TIMESTAMP, nullable=False, server_default=func.now())
+    # NULL quando o treino veio do motor de regras, que nao justifica nada.
+    justificativa = Column(TEXT, nullable=True)
 
     usuario = relationship("UsuarioDB", back_populates="treinos")
     exercicios_associados = relationship("TreinoExercicioDB", back_populates="treino")

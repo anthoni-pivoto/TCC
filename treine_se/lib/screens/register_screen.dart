@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -41,6 +42,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final Color bgCream = const Color(0xFFEDF2F7);
   final Color inkBrown = const Color(0xFF2D4F6B);
   final Color vintageRed = const Color(0xFF7B9EC5);
+
+  // Trava o botão durante o cadastro: a geração do treino pela IA leva uns
+  // 13 segundos, e sem isso o usuário toca de novo e cria dois cadastros.
+  bool _enviando = false;
+
+  // nome do campo no backend -> rótulo que o usuário reconhece
+  static const Map<String, String> _rotulosCampos = {
+    'nm_usuario': 'Nome',
+    'em_usuario': 'E-mail',
+    'pwd_usuario': 'Senha',
+    'peso': 'Peso',
+    'altura': 'Altura',
+    'qtd_dias': 'Dias de treino',
+    'objetivo': 'Objetivo',
+    'foco': 'Foco',
+  };
 
   List<Map<String, dynamic>> _lesoes = [];
   final Set<int> _selectedLesoes = {};
@@ -122,39 +139,155 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  /// Confere os campos aqui mesmo. Evita uma ida ao servidor — que leva uns 13
+  /// segundos por causa da geração do treino — só para descobrir que faltou
+  /// preencher algo. Devolve null quando está tudo certo.
+  String? _validarCampos() {
+    if (_nameController.text.trim().isEmpty) {
+      return 'Informe seu nome.';
+    }
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      return 'Informe seu e-mail.';
+    }
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      return 'O e-mail informado não parece válido.\n\nExemplo: nome@email.com';
+    }
+    if (_passwordController.text.length < 6) {
+      return 'A senha precisa ter ao menos 6 caracteres.';
+    }
+    // Aceita vírgula: no Brasil se digita 1,80 com muito mais frequência.
+    final peso = double.tryParse(_weightController.text.replaceAll(',', '.'));
+    if (peso == null || peso <= 0) {
+      return 'Informe um peso válido, em quilos.';
+    }
+    final altura = double.tryParse(_heightController.text.replaceAll(',', '.'));
+    if (altura == null || altura <= 0) {
+      return 'Informe uma altura válida, como 1,75.';
+    }
+    return null;
+  }
+
+  /// Traduz a resposta de erro do backend para uma frase legível.
+  ///
+  /// O FastAPI usa DUAS formas diferentes no campo `detail`: uma lista de erros
+  /// de validação (HTTP 422) ou uma string simples (400, 401, 404). Tratar só
+  /// uma delas era o que fazia o JSON cru aparecer na tela.
+  String _mensagemDeErro(http.Response resposta) {
+    try {
+      final corpo = jsonDecode(resposta.body);
+      final detalhe = corpo is Map ? corpo['detail'] : null;
+
+      if (detalhe is List) {
+        return detalhe.map((erro) {
+          final loc = (erro['loc'] as List?) ?? const [];
+          final campo = loc.isNotEmpty ? loc.last.toString() : '';
+          final rotulo = _rotulosCampos[campo] ?? campo;
+          final msg = (erro['msg'] ?? '').toString();
+
+          if (msg.contains('@-sign') || msg.contains('valid email')) {
+            return '$rotulo: informe um endereço válido, como nome@email.com';
+          }
+          if (msg.contains('Field required')) {
+            return '$rotulo: campo obrigatório.';
+          }
+          if (msg.contains('valid number') || msg.contains('valid float')) {
+            return '$rotulo: informe um número.';
+          }
+          return '$rotulo: $msg';
+        }).join('\n\n');
+      }
+
+      if (detalhe is String) {
+        // A view embrulha qualquer falha em "Erro ao cadastrar: <exceção crua>",
+        // então e-mail repetido chega como violação de unicidade do Postgres.
+        if (detalhe.contains('UniqueViolation') ||
+            detalhe.contains('duplicate key') ||
+            detalhe.contains('already exists')) {
+          return 'Este e-mail já está cadastrado.\n\nTente entrar na sua conta ou use outro endereço.';
+        }
+        return detalhe;
+      }
+    } catch (_) {
+      // Corpo não era JSON; cai na mensagem genérica abaixo.
+    }
+    return 'Não foi possível concluir o cadastro (erro ${resposta.statusCode}).';
+  }
+
   Future<void> _cadastrarUsuario() async {
+    if (_enviando) return;
+
+    final erroLocal = _validarCampos();
+    if (erroLocal != null) {
+      _mostrarErro(erroLocal);
+      return;
+    }
+
     final String apiUrl = '$baseUrl/api/usuarios/';
 
     Map<String, dynamic> userData = {
-      "nm_usuario": _nameController.text,
-      "em_usuario": _emailController.text,
+      "nm_usuario": _nameController.text.trim(),
+      "em_usuario": _emailController.text.trim(),
       "pwd_usuario": _passwordController.text,
       "qtd_dias": _selectedDays,
       "objetivo": _selectedGoal,
-      "peso": double.tryParse(_weightController.text) ?? 0.0,
-      "altura": double.tryParse(_heightController.text) ?? 0.0,
+      "peso": double.parse(_weightController.text.replaceAll(',', '.')),
+      "altura": double.parse(_heightController.text.replaceAll(',', '.')),
       "foco": _selectedFocus,
       "ids_lesoes": _selectedLesoes.toList(),
     };
 
+    setState(() => _enviando = true);
     try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(userData),
-      );
+      final response = await http
+          .post(
+            Uri.parse(apiUrl),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode(userData),
+          )
+          // O cadastro espera a IA montar a ficha; o padrão do http é curto
+          // demais para isso.
+          .timeout(const Duration(seconds: 90));
 
+      if (!mounted) return;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        await _mostrarSucesso();
+        if (mounted) Navigator.pop(context);
+      } else {
+        _mostrarErro(_mensagemDeErro(response));
+      }
+    } on TimeoutException {
       if (mounted) {
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          await _mostrarSucesso();
-          if (mounted) Navigator.pop(context);
-        } else {
-          debugPrint("Erro: ${response.body}");
-        }
+        _mostrarErro(
+          'O servidor demorou demais para responder.\n\nSeu cadastro pode ter sido criado — tente entrar antes de cadastrar de novo.',
+        );
       }
     } catch (e) {
-      debugPrint("Erro de conexão: $e");
+      debugPrint('Erro de conexão: $e');
+      if (mounted) {
+        _mostrarErro(
+          'Não foi possível falar com o servidor.\n\nVerifique sua conexão e tente novamente.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _enviando = false);
     }
+  }
+
+  void _mostrarErro(String mensagem) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Fechar',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 350),
+      pageBuilder: (_, __, ___) => _ErrorDialog(mensagem: mensagem),
+      transitionBuilder: (_, anim, __, child) => ScaleTransition(
+        scale: CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
+        child: FadeTransition(opacity: anim, child: child),
+      ),
+    );
   }
 
   Future<void> _mostrarSucesso() {
@@ -344,10 +477,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
             // --- BOTÃO DE CADASTRO VINTAGE ---
             ElevatedButton(
-              onPressed: _cadastrarUsuario,
+              onPressed: _enviando ? null : _cadastrarUsuario,
               style: ElevatedButton.styleFrom(
                 backgroundColor: vintageRed,
                 foregroundColor: bgCream,
+                disabledBackgroundColor: vintageRed.withValues(alpha: 0.6),
+                disabledForegroundColor: bgCream,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 elevation: 6,
                 shape: RoundedRectangleBorder(
@@ -355,14 +490,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   side: BorderSide(color: inkBrown, width: 3), // Borda estilo desenho
                 ),
               ),
-              child: const Text(
-                'FINALIZAR CADASTRO',
-                style: TextStyle(
-                  fontSize: 20, 
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                ),
-              ),
+              child: _enviando
+                  // A espera é longa; sem sinal na tela o usuário toca de novo
+                  // ou acha que o app travou.
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            valueColor: AlwaysStoppedAnimation<Color>(bgCream),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        const Text(
+                          'MONTANDO SEU TREINO...',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ],
+                    )
+                  : const Text(
+                      'FINALIZAR CADASTRO',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
             ),
             const SizedBox(height: 20),
           ],
@@ -432,6 +592,90 @@ class _SuccessDialogState extends State<_SuccessDialog> {
                   fontSize: 13,
                   color: const Color(0xFF2D4F6B).withValues(alpha: 0.7),
                   fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+class _ErrorDialog extends StatelessWidget {
+  const _ErrorDialog({required this.mensagem});
+
+  final String mensagem;
+
+  @override
+  Widget build(BuildContext context) {
+    const inkBrown = Color(0xFF2D4F6B);
+
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          width: 300,
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEDF2F7),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: inkBrown, width: 3),
+            boxShadow: const [
+              BoxShadow(color: Colors.black26, blurRadius: 16, offset: Offset(4, 6)),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFC0563F),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.priority_high, color: Colors.white, size: 44),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Não foi possível cadastrar',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                  color: inkBrown,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                mensagem,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: inkBrown.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: inkBrown,
+                    foregroundColor: const Color(0xFFEDF2F7),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: const Text(
+                    'ENTENDI',
+                    style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.1),
+                  ),
                 ),
               ),
             ],

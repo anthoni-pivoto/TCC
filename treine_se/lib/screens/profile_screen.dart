@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import '../widgets/aviso_restricoes.dart';
 
 class ProfileScreen extends StatefulWidget {
   final int idUsuario;
@@ -328,6 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildHeader(dados.usuario, dados.lesoes),
+                AvisoRestricoes(idUsuario: widget.idUsuario),
                 _buildInfoCards(dados.usuario),
                 _buildGrafico(dados.frequencia),
                 const SizedBox(height: 32),

@@ -1,13 +1,12 @@
 import logging
 import os
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
-from models.associativas import tb_exercicio_lesao
 from models.usuario_model import UsuarioDB
-from models.exercicio_model import ExercicioDB, LesaoDB
-from schemas.ia_schema import PlanoTreino
+from models.exercicio_model import ExercicioDB
+from schemas.ia_schema import PlanoTreino, plano_com_dias
+from services.restricoes_service import contraindicacoes
 from schemas.treino_schema import TreinoCreate, TreinoExercicioCreate
 from controllers.treino_controller import criar_treino
 from services.treino_service import gerar_treino_personalizado
@@ -30,7 +29,8 @@ INSTRUCOES = """Você é um educador físico experiente montando fichas de trein
 
 Regras invioláveis:
 - Use SOMENTE os id_exercicio presentes no catálogo abaixo. Nunca invente um ID.
-- Monte exatamente a quantidade de dias solicitada, numerados de 1 em diante.
+- Monte EXATAMENTE {dias} dias de treino, numerados de 1 a {dias}, sem pular
+  nem repetir número. Não confunda com os 7 dias da semana.
 - Cada dia deve ter entre {minimo} e {maximo} exercícios.
 - Nunca repita o mesmo exercício dentro do mesmo dia.
 
@@ -63,14 +63,23 @@ def gerar_treino_ia(db: Session, id_usuario: int) -> list:
     Qualquer falha — chave ausente, rede, resposta reprovada na validação —
     cai no motor de regras deterministico, para que o usuário nunca fique sem treino.
     """
-    try:
-        return _gerar_com_ia(db, id_usuario)
-    except Exception as exc:
-        logger.warning(
-            "Geração por IA falhou para o usuário %s (%s: %s). Usando motor de regras.",
-            id_usuario, type(exc).__name__, exc,
-        )
-        return gerar_treino_personalizado(db, id_usuario)
+    for tentativa in (1, 2):
+        try:
+            return _gerar_com_ia(db, id_usuario)
+        except Exception as exc:
+            # Falha de validação costuma ser azar de amostragem: a segunda
+            # tentativa custa centavos e evita entregar a ficha pobre do motor
+            # de regras. Erro de configuração (chave ausente) repete igual, e a
+            # segunda tentativa apenas confirma antes de desistir.
+            logger.warning(
+                "Geração por IA falhou para o usuário %s na tentativa %d (%s: %s).",
+                id_usuario, tentativa, type(exc).__name__, exc,
+            )
+
+    logger.warning(
+        "Usuário %s ficará com o treino do motor de regras.", id_usuario
+    )
+    return gerar_treino_personalizado(db, id_usuario)
 
 
 def _gerar_com_ia(db: Session, id_usuario: int) -> list:
@@ -104,6 +113,7 @@ def _gerar_com_ia(db: Session, id_usuario: int) -> list:
         system=[{
             "type": "text",
             "text": INSTRUCOES.format(
+                dias=qtd_dias,
                 minimo=MIN_EXERCICIOS_DIA,
                 maximo=MAX_EXERCICIOS_DIA,
                 catalogo=_montar_catalogo(validos, avisos),
@@ -111,7 +121,7 @@ def _gerar_com_ia(db: Session, id_usuario: int) -> list:
             "cache_control": {"type": "ephemeral"},
         }],
         messages=[{"role": "user", "content": _montar_perfil(usuario, qtd_dias)}],
-        output_format=PlanoTreino,
+        output_format=plano_com_dias(qtd_dias),
         **ajuste_effort,
     )
 
@@ -122,44 +132,13 @@ def _gerar_com_ia(db: Session, id_usuario: int) -> list:
     return _persistir(db, id_usuario, plano)
 
 
-def _contraindicacoes(db: Session, usuario: UsuarioDB) -> tuple[set, dict]:
-    """Separa as contraindicações do usuário nos dois níveis.
-
-    Devolve os ids que saem do catálogo e, para os de cautela, os nomes das
-    lesões que motivam o aviso — é esse texto que o modelo lê.
-    """
-    ids_lesoes = {lesao.id_lesao for lesao in usuario.lesoes}
-    if not ids_lesoes:
-        return set(), {}
-
-    linhas = db.execute(
-        select(
-            tb_exercicio_lesao.c.id_exercicio,
-            tb_exercicio_lesao.c.nivel,
-            LesaoDB.nm_lesao,
-        )
-        .join(LesaoDB, LesaoDB.id_lesao == tb_exercicio_lesao.c.id_lesao)
-        .where(tb_exercicio_lesao.c.id_lesao.in_(ids_lesoes))
-        .order_by(tb_exercicio_lesao.c.id_exercicio, LesaoDB.nm_lesao)
-    ).all()
-
-    bloqueados = {linha.id_exercicio for linha in linhas if linha.nivel == "bloqueio"}
-    avisos = {}
-    for linha in linhas:
-        # Exercício bloqueado por outra lesão não precisa de aviso: não chega ao
-        # catálogo de qualquer forma.
-        if linha.nivel == "cautela" and linha.id_exercicio not in bloqueados:
-            avisos.setdefault(linha.id_exercicio, []).append(linha.nm_lesao)
-    return bloqueados, avisos
-
-
 def _exercicios_permitidos(db: Session, usuario: UsuarioDB) -> tuple[list, dict]:
     """Catálogo do usuário, sem os exercícios de contraindicação absoluta.
 
     A ordenação é fixa de propósito: o catálogo entra no bloco com cache_control,
     e o cache da API é casamento de prefixo byte a byte.
     """
-    bloqueados, avisos = _contraindicacoes(db, usuario)
+    bloqueados, avisos = contraindicacoes(db, usuario)
     todos = (
         db.query(ExercicioDB)
         .order_by(ExercicioDB.grupo_muscular, ExercicioDB.id_exercicio)
@@ -196,7 +175,9 @@ def _montar_perfil(usuario: UsuarioDB, qtd_dias: int) -> str:
         f"- Objetivo: {usuario.objetivo or 'não informado'}",
         f"- Foco: {usuario.foco or 'não informado'}",
         f"- Peso: {usuario.peso} kg",
-        f"- Altura: {usuario.altura} m",
+        f"- Altura: {_altura_em_metros(usuario.altura)} m"
+        if _altura_em_metros(usuario.altura) is not None
+        else "- Altura: não informada",
     ]
     imc = _calcular_imc(usuario.peso, usuario.altura)
     if imc is not None:
@@ -205,11 +186,16 @@ def _montar_perfil(usuario: UsuarioDB, qtd_dias: int) -> str:
     return "\n".join(linhas)
 
 
-def _calcular_imc(peso, altura):
-    if not peso or not altura:
+def _altura_em_metros(altura):
+    """O cadastro aceita 1.62 e 162; normaliza para metros antes de mostrar."""
+    if not altura or altura <= 0:
         return None
-    metros = altura / 100 if altura > 3 else altura  # tolera altura em cm
-    if metros <= 0:
+    return round(altura / 100 if altura > 3 else altura, 2)
+
+
+def _calcular_imc(peso, altura):
+    metros = _altura_em_metros(altura)
+    if not peso or metros is None:
         return None
     return peso / (metros ** 2)
 
@@ -257,7 +243,11 @@ def _persistir(db: Session, id_usuario: int, plano: PlanoTreino) -> list:
                     for exercicio in dia.exercicios
                 ],
             )
-            treinos.append(criar_treino(db, treino_data, origem="ia"))
+            treinos.append(
+                criar_treino(
+                    db, treino_data, origem="ia", justificativa=plano.justificativa
+                )
+            )
     except Exception:
         # criar_treino comita por dia; sem isso o fallback empilharia treinos
         # em cima dos dias já gravados.

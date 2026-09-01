@@ -5,6 +5,7 @@ import 'treino_detalhe_screen.dart';
 import '../config/app_config.dart';
 import '../services/calendar_service.dart';
 import '../services/notification_service.dart';
+import '../widgets/aviso_restricoes.dart';
 
 class HomeScreen extends StatefulWidget {
   final int idUsuario;
@@ -236,6 +237,8 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildHeader(),
+          // Fica acima da lista, sempre visível, antes de qualquer treino.
+          AvisoRestricoes(idUsuario: widget.idUsuario),
           Expanded(child: _buildBody()),
         ],
       ),

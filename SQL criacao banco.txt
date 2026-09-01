@@ -244,3 +244,10 @@ INSERT INTO tb_exercicio_lesao (id_lesao, id_exercicio, nivel) VALUES
     -- 48 Pos-Operatorio Recente
     (48, 47, 'cautela'), (48, 58, 'cautela'), (48, 70, 'cautela'), (48, 74, 'cautela')
 ON CONFLICT (id_lesao, id_exercicio) DO NOTHING;
+
+ALTER TABLE tb_treino ADD COLUMN justificativa TEXT;
+
+COMMENT ON COLUMN tb_treino.justificativa IS
+    'explicacao da IA para a prescricao; NULL quando o treino veio do motor de regras';
+
+ALTER TABLE tb_usuario ADD CONSTRAINT tb_usuario_email_uk UNIQUE (em_usuario);

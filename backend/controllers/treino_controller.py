@@ -4,7 +4,12 @@ from models.treino_model import TreinoDB, TreinoExercicioDB
 from models.exercicio_model import ExercicioDB
 from schemas.treino_schema import TreinoCreate, TreinoDetalhadoResponse, ExercicioDetalhadoResponse
 
-def criar_treino(db: Session, treino_data: TreinoCreate, origem: str = "regra") -> TreinoDB:
+def criar_treino(
+    db: Session,
+    treino_data: TreinoCreate,
+    origem: str = "regra",
+    justificativa: str | None = None,
+) -> TreinoDB:
     ids_exercicios = [e.id_exercicio for e in treino_data.exercicios]
     exercicios_existentes = db.query(ExercicioDB.id_exercicio).filter(
         ExercicioDB.id_exercicio.in_(ids_exercicios)
@@ -18,7 +23,8 @@ def criar_treino(db: Session, treino_data: TreinoCreate, origem: str = "regra") 
         id_usuario=treino_data.id_usuario,
         dia_treino=treino_data.dia_treino,
         st_ativo=True,
-        origem=origem
+        origem=origem,
+        justificativa=justificativa
     )
     db.add(novo_treino)
     db.flush()
@@ -67,6 +73,8 @@ def buscar_treinos_usuario(db: Session, id_usuario: int) -> list[TreinoDetalhado
                 id_treino=treino.id_treino,
                 dia_treino=treino.dia_treino,
                 st_ativo=treino.st_ativo,
+                origem=treino.origem,
+                justificativa=treino.justificativa,
                 exercicios=exercicios,
             )
         )
