@@ -3,7 +3,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import '../theme/app_theme.dart';
 import '../widgets/aviso_restricoes.dart';
+import '../widgets/ui.dart';
 
 class ProfileScreen extends StatefulWidget {
   final int idUsuario;
@@ -20,11 +22,11 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  static const Color bgCream    = Color(0xFFEDF2F7);
-  static const Color inkBrown   = Color(0xFF2D4F6B);
-  static const Color vintageRed = Color(0xFF7B9EC5);
-
   late Future<_PerfilData> _future;
+
+  /// Sobe a cada salvamento. Serve de chave para o aviso de lesões, que tem
+  /// estado próprio e precisa ser reconstruído do zero quando as lesões mudam.
+  int _versaoPerfil = 0;
 
   @override
   void initState() {
@@ -52,7 +54,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _PerfilData(usuario: usuario, frequencia: frequencia, lesoes: lesoes);
   }
 
-  Future<void> _abrirEdicaoPreferencias(Map<String, dynamic> u, List<Map<String, dynamic>> lesoes) async {
+  Future<void> _abrirEdicaoPreferencias(
+      Map<String, dynamic> u, List<Map<String, dynamic>> lesoes) async {
     const objetivoOpcoes = {
       'Ganho de Força': 'forca',
       'Definição': 'hipertrofia',
@@ -82,27 +85,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: bgCream,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        side: BorderSide(color: inkBrown, width: 2.5),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) {
-          InputDecoration deco(String label) => InputDecoration(
-            labelText: label,
-            labelStyle: const TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
-            filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.5),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: inkBrown, width: 2),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: inkBrown, width: 3),
-            ),
-          );
+          Widget dropdown<T>({
+            required String label,
+            required T? value,
+            required List<DropdownMenuItem<T>> items,
+            required ValueChanged<T?> onChanged,
+          }) =>
+              DropdownButtonFormField<T>(
+                initialValue: value,
+                decoration: neonInput(label: label),
+                dropdownColor: AppColors.bgElevated,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.cyan, size: 22),
+                style: const TextStyle(
+                  color: AppColors.text,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+                items: items,
+                onChanged: onChanged,
+              );
 
           Widget buildLesoesPicker() => Wrap(
             spacing: 8,
@@ -111,17 +117,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final id = l['id_lesao'] as int;
               final nome = l['nm_lesao'] as String;
               final sel = selectedLesoes.contains(id);
-              return FilterChip(
-                label: Text(
-                  nome,
-                  style: TextStyle(
-                    color: sel ? bgCream : inkBrown,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
-                  ),
-                ),
+              return NeonChip(
+                label: nome,
                 selected: sel,
-                onSelected: (val) => setLocal(() {
+                fontSize: 11.5,
+                onTap: () => setLocal(() {
+                  final val = !sel;
                   if (id == nenhumaId) {
                     selectedLesoes.clear();
                     if (val) { selectedLesoes.add(id); }
@@ -131,14 +132,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     else { selectedLesoes.remove(id); }
                   }
                 }),
-                selectedColor: vintageRed,
-                backgroundColor: Colors.white.withValues(alpha: 0.5),
-                side: BorderSide(
-                  color: sel ? inkBrown : inkBrown.withValues(alpha: 0.3),
-                  width: 1.5,
-                ),
-                checkmarkColor: bgCream,
-                showCheckmark: false,
               );
             }).toList(),
           );
@@ -169,170 +162,177 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 fechou = true;
                 Navigator.of(ctx).pop();
                 if (mounted) {
-                  setState(() { _future = _carregarDados(); });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Preferências atualizadas!'),
-                      backgroundColor: Color(0xFF4CAF50),
-                    ),
-                  );
+                  setState(() {
+                    _future = _carregarDados();
+                    _versaoPerfil++;
+                  });
+                  _aviso('Preferências atualizadas!', AppColors.success);
                 }
               } else {
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(content: Text('Erro ao salvar.'), backgroundColor: vintageRed),
-                );
+                _avisoEm(ctx, 'Erro ao salvar.', AppColors.danger);
               }
             } catch (e) {
               debugPrint('ERRO ao salvar preferências: $e');
               if (ctx.mounted) {
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  SnackBar(content: Text('Erro: $e'), backgroundColor: vintageRed),
-                );
+                _avisoEm(ctx, 'Erro: $e', AppColors.danger);
               }
             } finally {
               if (!fechou && ctx.mounted) setLocal(() => salvando = false);
             }
           }
 
-          return Padding(
-            padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: inkBrown.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(2),
+          return SheetShell(
+            scrollable: true,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const GradientText(
+                  'Editar Preferências',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 22),
+                dropdown<String>(
+                  label: 'Objetivo',
+                  value: objetivo,
+                  items: objetivoOpcoes.entries
+                      .map((e) => DropdownMenuItem(
+                            value: e.value,
+                            child: Text(e.key,
+                                style: const TextStyle(
+                                    color: AppColors.text,
+                                    fontWeight: FontWeight.w600)),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setLocal(() => objetivo = v),
+                ),
+                const SizedBox(height: 14),
+                dropdown<String>(
+                  label: 'Foco do Treino',
+                  value: foco,
+                  items: focoOpcoes.entries
+                      .map((e) => DropdownMenuItem(
+                            value: e.value,
+                            child: Text(e.key,
+                                style: const TextStyle(
+                                    color: AppColors.text,
+                                    fontWeight: FontWeight.w600)),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setLocal(() => foco = v),
+                ),
+                const SizedBox(height: 20),
+                const FieldLabel('Dias de treino por semana'),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [2, 3, 4, 5]
+                      .map((d) => NeonChip(
+                            label: '$d dias',
+                            selected: qtdDias == d,
+                            fontSize: 13,
+                            onTap: () => setLocal(() => qtdDias = d),
+                          ))
+                      .toList(),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: pesoCtrl,
+                        style: const TextStyle(
+                            color: AppColors.text, fontWeight: FontWeight.w600),
+                        decoration: neonInput(
+                          label: 'Peso (kg)',
+                          icon: Icons.monitor_weight_outlined,
+                        ),
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
                       ),
                     ),
-                  ),
-                  const Text(
-                    'Editar Preferências',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: inkBrown),
-                  ),
-                  const SizedBox(height: 20),
-                  DropdownButtonFormField<String>(
-                    value: objetivo,
-                    decoration: deco('Objetivo'),
-                    dropdownColor: bgCream,
-                    iconEnabledColor: inkBrown,
-                    items: objetivoOpcoes.entries.map((e) => DropdownMenuItem(
-                      value: e.value,
-                      child: Text(e.key, style: const TextStyle(color: inkBrown, fontWeight: FontWeight.bold)),
-                    )).toList(),
-                    onChanged: (v) => setLocal(() => objetivo = v),
-                  ),
-                  const SizedBox(height: 14),
-                  DropdownButtonFormField<String>(
-                    value: foco,
-                    decoration: deco('Foco do Treino'),
-                    dropdownColor: bgCream,
-                    iconEnabledColor: inkBrown,
-                    items: focoOpcoes.entries.map((e) => DropdownMenuItem(
-                      value: e.value,
-                      child: Text(e.key, style: const TextStyle(color: inkBrown, fontWeight: FontWeight.bold)),
-                    )).toList(),
-                    onChanged: (v) => setLocal(() => foco = v),
-                  ),
-                  const SizedBox(height: 14),
-                  DropdownButtonFormField<int>(
-                    value: qtdDias,
-                    decoration: deco('Dias de treino por semana'),
-                    dropdownColor: bgCream,
-                    iconEnabledColor: inkBrown,
-                    items: [2, 3, 4, 5].map((d) => DropdownMenuItem(
-                      value: d,
-                      child: Text('$d dias', style: const TextStyle(color: inkBrown, fontWeight: FontWeight.bold)),
-                    )).toList(),
-                    onChanged: (v) => setLocal(() => qtdDias = v),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: pesoCtrl,
-                          style: const TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
-                          decoration: deco('Peso (kg)'),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: alturaCtrl,
+                        style: const TextStyle(
+                            color: AppColors.text, fontWeight: FontWeight.w600),
+                        decoration: neonInput(
+                          label: 'Altura (m)',
+                          icon: Icons.height_rounded,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: alturaCtrl,
-                          style: const TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
-                          decoration: deco('Altura (m)'),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  const Text(
-                    'Lesões / Restrições',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: inkBrown),
-                  ),
-                  const SizedBox(height: 8),
-                  buildLesoesPicker(),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: salvando ? null : salvar,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: vintageRed,
-                      foregroundColor: bgCream,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        side: const BorderSide(color: inkBrown, width: 2.5),
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
                       ),
                     ),
-                    child: salvando
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: bgCream, strokeWidth: 2.5))
-                        : const Text('SALVAR', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const FieldLabel('Lesões / Restrições'),
+                const SizedBox(height: 10),
+                buildLesoesPicker(),
+                const SizedBox(height: 28),
+                GradientButton(
+                  label: 'SALVAR',
+                  onPressed: salvando ? null : salvar,
+                  loading: salvando,
+                  fontSize: 17,
+                ),
+              ],
             ),
           );
         },
       ),
     );
+  }
 
+  void _aviso(String mensagem, Color cor) => _avisoEm(context, mensagem, cor);
+
+  void _avisoEm(BuildContext ctx, String mensagem, Color cor) {
+    ScaffoldMessenger.of(ctx).showSnackBar(
+      SnackBar(
+        content: Text(mensagem),
+        backgroundColor: AppColors.bgElevated,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          side: BorderSide(color: cor.withValues(alpha: 0.6)),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
+      bottom: false,
       child: FutureBuilder<_PerfilData>(
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator(color: vintageRed));
+            return const Center(
+                child: CircularProgressIndicator(color: AppColors.cyan));
           }
           if (snapshot.hasError) {
-            return Center(
-              child: Text('Erro ao carregar perfil.', style: TextStyle(color: inkBrown)),
+            return const Center(
+              child: Text('Erro ao carregar perfil.',
+                  style: TextStyle(color: AppColors.textDim)),
             );
           }
 
           final dados = snapshot.data!;
           return SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 110),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildHeader(dados.usuario, dados.lesoes),
-                AvisoRestricoes(idUsuario: widget.idUsuario),
+                AvisoRestricoes(
+                  key: ValueKey(_versaoPerfil),
+                  idUsuario: widget.idUsuario,
+                ),
                 _buildInfoCards(dados.usuario),
                 _buildGrafico(dados.frequencia),
-                const SizedBox(height: 32),
               ],
             ),
           );
@@ -351,68 +351,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
         .map((p) => p[0].toUpperCase())
         .join();
 
-    return Container(
-      color: bgCream,
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-      child: Column(
+    return ScreenHeader(
+      title: 'Perfil',
+      eyebrow: u['em_usuario'] as String?,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Perfil',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: inkBrown,
-                      ),
-                    ),
-                    Text(
-                      u['em_usuario'] ?? '',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: inkBrown.withValues(alpha: 0.6),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.tune, color: inkBrown, size: 22),
-                tooltip: 'Editar preferências',
-                onPressed: () => _abrirEdicaoPreferencias(u, lesoes),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              const SizedBox(width: 8),
-              // Avatar com iniciais
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: vintageRed,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: inkBrown, width: 2.5),
-                ),
-                child: Center(
-                  child: Text(
-                    iniciais,
-                    style: const TextStyle(
-                      color: bgCream,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 20,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.tune_rounded, color: AppColors.textDim),
+            tooltip: 'Editar preferências',
+            onPressed: () => _abrirEdicaoPreferencias(u, lesoes),
           ),
-          const SizedBox(height: 16),
-          Container(height: 3, color: inkBrown),
+          const SizedBox(width: 4),
+          // Avatar com iniciais
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: AppColors.brand,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.blue.withValues(alpha: 0.5),
+                  blurRadius: 22,
+                  spreadRadius: -4,
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                iniciais,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -429,41 +405,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
       'Altura':      u['altura'] != null ? '${u['altura']} m' : '-',
     };
 
+    final entradas = labels.entries.toList();
+
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
       child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: labels.entries.map((e) => _buildInfoChip(e.key, e.value)).toList(),
+        spacing: 10,
+        runSpacing: 10,
+        children: List.generate(entradas.length, (i) {
+          // Mesma lógica de gradação da home: do ciano ao roxo ao longo da fila.
+          final t = i / (entradas.length - 1);
+          return _buildInfoChip(
+            entradas[i].key,
+            entradas[i].value,
+            Color.lerp(AppColors.cyan, AppColors.purple, t)!,
+          );
+        }),
       ),
     );
   }
 
-  Widget _buildInfoChip(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: inkBrown, width: 2),
-      ),
+  Widget _buildInfoChip(String label, String value, Color acento) {
+    return GlassCard(
+      radius: AppRadius.md,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      borderColor: acento.withValues(alpha: 0.30),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 17,
               fontWeight: FontWeight.w900,
-              color: vintageRed,
+              color: acento,
             ),
           ),
+          const SizedBox(height: 2),
           Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: inkBrown.withValues(alpha: 0.7),
+              color: AppColors.textFaint,
+              letterSpacing: 1,
             ),
           ),
         ],
@@ -477,15 +462,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final treinou = frequencia.where((d) => d['treinou'] == true).length;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-      child: Container(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+      child: GlassCard(
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: inkBrown, width: 2.5),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(3, 3))],
-        ),
+        glowColor: AppColors.purple,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -494,18 +474,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 const Text(
                   'Frequência Semanal',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: inkBrown),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.text,
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(
-                    color: treinou > 0 ? vintageRed : inkBrown.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
+                    gradient: treinou > 0 ? AppColors.brand : null,
+                    color: treinou > 0
+                        ? null
+                        : Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    boxShadow: treinou > 0
+                        ? [
+                            BoxShadow(
+                              color: AppColors.blue.withValues(alpha: 0.4),
+                              blurRadius: 14,
+                              spreadRadius: -3,
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Text(
                     '$treinou dias',
-                    style: const TextStyle(
-                      color: bgCream,
+                    style: TextStyle(
+                      color: treinou > 0 ? Colors.white : AppColors.textFaint,
                       fontWeight: FontWeight.w900,
                       fontSize: 12,
                     ),
@@ -513,14 +510,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
             SizedBox(
               height: 160,
               child: frequencia.isEmpty
-                  ? Center(
+                  ? const Center(
                       child: Text(
                         'Nenhum treino registrado ainda.',
-                        style: TextStyle(color: inkBrown.withValues(alpha: 0.5)),
+                        style: TextStyle(color: AppColors.textFaint),
                       ),
                     )
                   : BarChart(
@@ -531,11 +528,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           show: true,
                           drawVerticalLine: false,
                           getDrawingHorizontalLine: (_) => FlLine(
-                            color: inkBrown.withValues(alpha: 0.1),
+                            color: Colors.white.withValues(alpha: 0.06),
                             strokeWidth: 1,
                           ),
                         ),
                         borderData: FlBorderData(show: false),
+                        barTouchData: BarTouchData(
+                          touchTooltipData: BarTouchTooltipData(
+                            getTooltipColor: (_) => AppColors.bgElevated,
+                            getTooltipItem: (group, _, rod, __) => BarTooltipItem(
+                              '${rod.toY.toInt()} exercício(s)',
+                              const TextStyle(
+                                color: AppColors.text,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
                         titlesData: FlTitlesData(
                           leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                           rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -545,15 +555,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               showTitles: true,
                               getTitlesWidget: (value, _) {
                                 final idx = value.toInt();
-                                if (idx < 0 || idx >= frequencia.length) return const SizedBox.shrink();
+                                if (idx < 0 || idx >= frequencia.length) {
+                                  return const SizedBox.shrink();
+                                }
                                 return Padding(
-                                  padding: const EdgeInsets.only(top: 6),
+                                  padding: const EdgeInsets.only(top: 8),
                                   child: Text(
                                     frequencia[idx]['dia_semana'],
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
-                                      color: inkBrown.withValues(alpha: 0.7),
+                                      color: AppColors.textFaint,
                                     ),
                                   ),
                                 );
@@ -570,9 +582,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             barRods: [
                               BarChartRodData(
                                 toY: treinou ? (qtd == 0 ? 1 : qtd) : 0,
-                                color: treinou ? vintageRed : inkBrown.withValues(alpha: 0.15),
-                                width: 22,
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                                // Barra vertical em gradiente: a luz cresce
+                                // junto com o valor.
+                                gradient: treinou
+                                    ? const LinearGradient(
+                                        colors: [AppColors.purple, AppColors.cyan],
+                                        begin: Alignment.bottomCenter,
+                                        end: Alignment.topCenter,
+                                      )
+                                    : null,
+                                color: treinou
+                                    ? null
+                                    : Colors.white.withValues(alpha: 0.06),
+                                width: 20,
+                                borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(6)),
                               ),
                             ],
                           );
@@ -580,17 +604,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             // Legenda
             Row(
               children: [
-                _buildLegendaDot(vintageRed),
-                const SizedBox(width: 4),
-                Text('Treinou', style: TextStyle(fontSize: 11, color: inkBrown.withValues(alpha: 0.7))),
-                const SizedBox(width: 16),
-                _buildLegendaDot(inkBrown.withValues(alpha: 0.15)),
-                const SizedBox(width: 4),
-                Text('Sem treino', style: TextStyle(fontSize: 11, color: inkBrown.withValues(alpha: 0.7))),
+                _buildLegendaDot(AppColors.cyan),
+                const SizedBox(width: 6),
+                const Text('Treinou',
+                    style: TextStyle(fontSize: 11, color: AppColors.textFaint)),
+                const SizedBox(width: 18),
+                _buildLegendaDot(Colors.white.withValues(alpha: 0.12)),
+                const SizedBox(width: 6),
+                const Text('Sem treino',
+                    style: TextStyle(fontSize: 11, color: AppColors.textFaint)),
               ],
             ),
           ],
@@ -600,9 +626,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildLegendaDot(Color color) => Container(
-        width: 12,
-        height: 12,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(3),
+        ),
       );
 
   double _maxY(List frequencia) {

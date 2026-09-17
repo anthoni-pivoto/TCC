@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../services/notification_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/ui.dart';
 
 class TreinoDetalheScreen extends StatefulWidget {
   final Map<String, dynamic> treino;
@@ -20,11 +22,6 @@ class TreinoDetalheScreen extends StatefulWidget {
 }
 
 class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
-  static const Color bgCream    = Color(0xFFEDF2F7);
-  static const Color inkBrown   = Color(0xFF2D4F6B);
-  static const Color vintageRed = Color(0xFF7B9EC5);
-  static const Color greenCheck = Color(0xFF4CAF50);
-
   late Future<Map<String, Map<String, dynamic>>> _firestoreFuture;
 
   final Set<int> _concluidos  = {};
@@ -85,7 +82,7 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
     return showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: 0.65),
+      barrierColor: Colors.black.withValues(alpha: 0.7),
       transitionDuration: const Duration(milliseconds: 500),
       pageBuilder: (_, __, ___) =>
           _WelcomeDialog(dia: widget.treino['dia_treino'] as int),
@@ -142,33 +139,42 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
       if (!mounted) return;
       if (response.statusCode == 201) {
         await NotificationService.agendarInatividade();
-        await _mostrarSucessoTreino(completo: completo, qtd: qtdConcluidos, total: exercicios.length);
+        await _mostrarSucessoTreino(
+            completo: completo, qtd: qtdConcluidos, total: exercicios.length);
         if (mounted) Navigator.pop(context);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erro ao registrar treino.'), backgroundColor: vintageRed),
-        );
+        _aviso('Erro ao registrar treino.');
       }
     } catch (e) {
       debugPrint('ERRO ao registrar treino: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e'), backgroundColor: vintageRed),
-        );
-      }
+      if (mounted) _aviso('Erro: $e');
     } finally {
       if (mounted) setState(() => _registrando = false);
     }
   }
 
-  Future<void> _mostrarSucessoTreino({required bool completo, required int qtd, required int total}) {
+  void _aviso(String mensagem) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensagem),
+        backgroundColor: AppColors.bgElevated,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          side: BorderSide(color: AppColors.danger.withValues(alpha: 0.6)),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _mostrarSucessoTreino(
+      {required bool completo, required int qtd, required int total}) {
     return showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: 0.75),
+      barrierColor: Colors.black.withValues(alpha: 0.78),
       transitionDuration: const Duration(milliseconds: 500),
-      pageBuilder: (_, __, ___) =>
-          _WorkoutSuccessDialog(completo: completo, qtdConcluidos: qtd, totalExercicios: total),
+      pageBuilder: (_, __, ___) => _WorkoutSuccessDialog(
+          completo: completo, qtdConcluidos: qtd, totalExercicios: total),
       transitionBuilder: (_, anim, __, child) => ScaleTransition(
         scale: CurvedAnimation(parent: anim, curve: Curves.elasticOut),
         child: FadeTransition(opacity: anim, child: child),
@@ -184,46 +190,107 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
     final List exercicios = widget.treino['exercicios'] ?? [];
 
     return Scaffold(
-      backgroundColor: bgCream,
-      appBar: AppBar(
-        backgroundColor: bgCream,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: inkBrown, size: 28),
-        title: Text(
-          'Dia $dia',
-          style: const TextStyle(color: inkBrown, fontWeight: FontWeight.w900, fontSize: 24),
-        ),
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(3.0),
-          child: ColoredBox(color: inkBrown, child: SizedBox(height: 3)),
-        ),
-      ),
-      body: FutureBuilder<Map<String, Map<String, dynamic>>>(
-        future: _firestoreFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator(color: vintageRed));
-          }
-          final firestoreData = snapshot.data ?? {};
-          return CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final ex = exercicios[index] as Map<String, dynamic>;
-                      final fsData = firestoreData[ex['slug_firebase']] ?? {};
-                      return _buildExercicioCard(ex, fsData, index);
-                    },
-                    childCount: exercicios.length,
+      body: NeonBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Cabeçalho com progresso no lugar da AppBar sólida.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 6, 20, 0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded,
+                          color: AppColors.text),
+                      onPressed: () => Navigator.pop(context),
+                      tooltip: 'Voltar',
+                    ),
+                    Expanded(
+                      child: GradientText(
+                        'Dia $dia',
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${_concluidos.length}/${exercicios.length}',
+                      style: const TextStyle(
+                        color: AppColors.textDim,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Barra de progresso do treino
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: 5,
+                        color: Colors.white.withValues(alpha: 0.07),
+                      ),
+                      AnimatedFractionallySizedBox(
+                        duration: const Duration(milliseconds: 350),
+                        curve: Curves.easeOut,
+                        widthFactor: exercicios.isEmpty
+                            ? 0
+                            : _concluidos.length / exercicios.length,
+                        child: Container(
+                          height: 5,
+                          decoration: const BoxDecoration(
+                            gradient: AppColors.brand,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              SliverToBoxAdapter(child: _buildRegistrarButton(exercicios.length)),
+              Expanded(
+                child: FutureBuilder<Map<String, Map<String, dynamic>>>(
+                  future: _firestoreFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const Center(
+                          child:
+                              CircularProgressIndicator(color: AppColors.cyan));
+                    }
+                    final firestoreData = snapshot.data ?? {};
+                    return CustomScrollView(
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final ex =
+                                    exercicios[index] as Map<String, dynamic>;
+                                final fsData =
+                                    firestoreData[ex['slug_firebase']] ?? {};
+                                return _buildExercicioCard(ex, fsData, index);
+                              },
+                              childCount: exercicios.length,
+                            ),
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                            child: _buildRegistrarButton(exercicios.length)),
+                      ],
+                    );
+                  },
+                ),
+              ),
             ],
-          );
-        },
+          ),
+        ),
       ),
     );
   }
@@ -244,17 +311,18 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
     final timerAtivo    = _timers.containsKey(index);
     final timerSegundos = _timerSegundos[index];
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: concluido ? greenCheck.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: concluido ? greenCheck : inkBrown, width: 2.5),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(3, 3))],
-      ),
+    final Color acento = concluido ? AppColors.success : AppColors.cyan;
+
+    return GlassCard(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.zero,
+      radius: AppRadius.lg,
+      borderColor: concluido
+          ? AppColors.success.withValues(alpha: 0.5)
+          : AppColors.stroke,
+      glowColor: concluido ? AppColors.success : null,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(AppRadius.lg - 1),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -273,23 +341,37 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
                     // Círculo numerado / check
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 250),
-                      width: 32,
-                      height: 32,
+                      width: 34,
+                      height: 34,
                       decoration: BoxDecoration(
-                        color: concluido ? greenCheck : vintageRed,
+                        gradient: concluido
+                            ? const LinearGradient(
+                                colors: [AppColors.success, AppColors.cyan])
+                            : AppColors.brand,
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: acento.withValues(alpha: 0.45),
+                            blurRadius: 14,
+                            spreadRadius: -3,
+                          ),
+                        ],
                       ),
                       child: Center(
                         child: concluido
-                            ? const Icon(Icons.check, color: Colors.white, size: 18)
+                            ? const Icon(Icons.check_rounded,
+                                color: Colors.white, size: 19)
                             : Text(
                                 '${index + 1}',
                                 style: const TextStyle(
-                                  color: bgCream, fontWeight: FontWeight.w900, fontSize: 13),
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 13,
+                                ),
                               ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 13),
 
                     // Nome + resumo de séries
                     Expanded(
@@ -299,18 +381,22 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
                           Text(
                             nome,
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              color: inkBrown,
-                              decoration: concluido ? TextDecoration.lineThrough : null,
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w800,
+                              color: concluido
+                                  ? AppColors.textDim
+                                  : AppColors.text,
+                              decoration:
+                                  concluido ? TextDecoration.lineThrough : null,
+                              decorationColor: AppColors.textFaint,
                             ),
                           ),
-                          const SizedBox(height: 3),
+                          const SizedBox(height: 4),
                           Text(
                             '${ex['qtd_series']}x${ex['qtd_repeticoes']}  ·  ${ex['tempo_descanso_s']}s descanso',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 12,
-                              color: inkBrown.withValues(alpha: 0.6),
+                              color: AppColors.textFaint,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -327,8 +413,12 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
                       child: Padding(
                         padding: const EdgeInsets.only(left: 8, right: 4),
                         child: Icon(
-                          concluido ? Icons.check_circle : Icons.radio_button_unchecked,
-                          color: concluido ? greenCheck : inkBrown.withValues(alpha: 0.35),
+                          concluido
+                              ? Icons.check_circle_rounded
+                              : Icons.radio_button_unchecked_rounded,
+                          color: concluido
+                              ? AppColors.success
+                              : AppColors.textFaint,
                           size: 26,
                         ),
                       ),
@@ -338,9 +428,9 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
                     AnimatedRotation(
                       turns: expandido ? 0.5 : 0,
                       duration: const Duration(milliseconds: 250),
-                      child: Icon(
-                        Icons.keyboard_arrow_down,
-                        color: inkBrown.withValues(alpha: 0.5),
+                      child: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: AppColors.textFaint,
                         size: 22,
                       ),
                     ),
@@ -357,37 +447,39 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Divider(
-                          color: inkBrown.withValues(alpha: 0.2),
-                          height: 1,
-                          thickness: 1,
-                        ),
+                        const GlowDivider(height: 1),
 
                         // GIF
                         if (gifUrl != null)
-                          Image.network(
-                            Uri.encodeFull(gifUrl),
-                            height: 200,
-                            fit: BoxFit.cover,
-                            headers: const {'Accept': 'image/gif,image/*'},
-                            loadingBuilder: (_, child, progress) => progress == null
-                                ? child
-                                : const SizedBox(
-                                    height: 200,
-                                    child: Center(
-                                      child: CircularProgressIndicator(color: vintageRed),
-                                    ),
-                                  ),
-                            errorBuilder: (_, __, ___) => const SizedBox(
-                              height: 80,
-                              child: Center(
-                                child: Icon(Icons.broken_image, color: inkBrown, size: 40),
+                          Container(
+                            color: Colors.white,
+                            child: Image.network(
+                              Uri.encodeFull(gifUrl),
+                              height: 200,
+                              fit: BoxFit.contain,
+                              headers: const {'Accept': 'image/gif,image/*'},
+                              loadingBuilder: (_, child, progress) =>
+                                  progress == null
+                                      ? child
+                                      : const SizedBox(
+                                          height: 200,
+                                          child: Center(
+                                            child: CircularProgressIndicator(
+                                                color: AppColors.cyan),
+                                          ),
+                                        ),
+                              errorBuilder: (_, __, ___) => const SizedBox(
+                                height: 80,
+                                child: Center(
+                                  child: Icon(Icons.broken_image_outlined,
+                                      color: AppColors.textFaint, size: 36),
+                                ),
                               ),
                             ),
                           ),
 
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -395,47 +487,54 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                                 children: [
-                                  _buildStat('Séries', '${ex['qtd_series']}'),
-                                  _buildStat('Reps', '${ex['qtd_repeticoes']}'),
-                                  _buildStat('Descanso', '${ex['tempo_descanso_s']}s'),
+                                  _buildStat('Séries', '${ex['qtd_series']}',
+                                      AppColors.cyan),
+                                  _buildStat('Reps', '${ex['qtd_repeticoes']}',
+                                      AppColors.blue),
+                                  _buildStat(
+                                      'Descanso',
+                                      '${ex['tempo_descanso_s']}s',
+                                      AppColors.purple),
                                 ],
                               ),
 
                               if (equipment != null) ...[
-                                const SizedBox(height: 12),
-                                _buildInfoRow(Icons.fitness_center, equipment),
+                                const SizedBox(height: 14),
+                                _buildInfoRow(
+                                    Icons.fitness_center_rounded, equipment),
                               ],
                               if (secundarios.isNotEmpty) ...[
-                                const SizedBox(height: 6),
-                                _buildInfoRow(Icons.accessibility_new, secundarios.join(', ')),
+                                const SizedBox(height: 7),
+                                _buildInfoRow(Icons.accessibility_new_rounded,
+                                    secundarios.join(', ')),
                               ],
                               if (dicas.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                const Text(
-                                  'Dicas de execução',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w900,
-                                    color: inkBrown,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 16),
+                                const FieldLabel('Dicas de execução'),
+                                const SizedBox(height: 8),
                                 ...dicas.map((dica) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 4),
+                                  padding: const EdgeInsets.only(bottom: 6),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
-                                        '• ',
-                                        style: TextStyle(
-                                          color: vintageRed, fontWeight: FontWeight.w900),
+                                      Container(
+                                        margin: const EdgeInsets.only(
+                                            top: 6, right: 9),
+                                        width: 5,
+                                        height: 5,
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.cyan,
+                                          shape: BoxShape.circle,
+                                        ),
                                       ),
                                       Expanded(
                                         child: Text(
                                           dica,
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 13,
-                                            color: inkBrown.withValues(alpha: 0.85),
+                                            height: 1.4,
+                                            color: AppColors.textDim,
                                           ),
                                         ),
                                       ),
@@ -445,7 +544,7 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
                               ],
 
                               // Timer de descanso
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 18),
                               _buildTimerSection(
                                 index, tempoDescanso, nome, timerAtivo, timerSegundos),
                             ],
@@ -473,9 +572,14 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: inkBrown.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: inkBrown.withValues(alpha: 0.2), width: 1.5),
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: timerAtivo
+              ? AppColors.cyan.withValues(alpha: 0.5)
+              : Colors.white.withValues(alpha: 0.10),
+          width: 1.3,
+        ),
       ),
       child: Column(
         children: [
@@ -483,17 +587,17 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
             children: [
               Icon(
                 Icons.timer_outlined,
-                size: 20,
-                color: timerAtivo ? vintageRed : inkBrown.withValues(alpha: 0.5),
+                size: 19,
+                color: timerAtivo ? AppColors.cyan : AppColors.textFaint,
               ),
-              const SizedBox(width: 8),
-              Expanded(
+              const SizedBox(width: 9),
+              const Expanded(
                 child: Text(
                   'Descanso entre séries',
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: inkBrown.withValues(alpha: 0.75),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDim,
                   ),
                 ),
               ),
@@ -505,12 +609,13 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                     color: timerAtivo
-                        ? vintageRed
-                        : (encerrado ? greenCheck : inkBrown),
+                        ? AppColors.cyan
+                        : (encerrado ? AppColors.success : AppColors.text),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
               ],
 
               // Botão iniciar / parar / repetir
@@ -519,25 +624,46 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
                     ? _cancelarTimer(index)
                     : _iniciarTimer(index, tempoDescanso, nome),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: timerAtivo ? inkBrown : vintageRed,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: inkBrown, width: 1.5),
+                    gradient: timerAtivo ? null : AppColors.brand,
+                    color: timerAtivo
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : null,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    border: timerAtivo
+                        ? Border.all(
+                            color: Colors.white.withValues(alpha: 0.15))
+                        : null,
+                    boxShadow: timerAtivo
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: AppColors.blue.withValues(alpha: 0.4),
+                              blurRadius: 14,
+                              spreadRadius: -3,
+                            ),
+                          ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        timerAtivo ? Icons.stop : Icons.play_arrow,
-                        color: bgCream,
-                        size: 16,
+                        timerAtivo
+                            ? Icons.stop_rounded
+                            : Icons.play_arrow_rounded,
+                        color: timerAtivo ? AppColors.textDim : Colors.white,
+                        size: 17,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 5),
                       Text(
                         timerAtivo ? 'Parar' : (encerrado ? 'Repetir' : 'Iniciar'),
-                        style: const TextStyle(
-                          color: bgCream, fontWeight: FontWeight.w700, fontSize: 12),
+                        style: TextStyle(
+                          color: timerAtivo ? AppColors.textDim : Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -548,13 +674,14 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
 
           // Barra de progresso (só enquanto ativo)
           if (timerAtivo && timerSegundos != null) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: progresso,
-                backgroundColor: inkBrown.withValues(alpha: 0.15),
-                valueColor: const AlwaysStoppedAnimation<Color>(vintageRed),
+                backgroundColor: Colors.white.withValues(alpha: 0.08),
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(AppColors.cyan),
                 minHeight: 6,
               ),
             ),
@@ -571,92 +698,114 @@ class _TreinoDetalheScreenState extends State<TreinoDetalheScreen> {
     final bool algumMarcado = qtd > 0;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 36),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
+              GradientText(
                 '$qtd / $totalExercicios',
                 style: const TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.w900, color: inkBrown),
+                    fontSize: 19, fontWeight: FontWeight.w900),
               ),
               const SizedBox(width: 8),
-              Text(
+              const Text(
                 'exercícios concluídos',
                 style: TextStyle(
                   fontSize: 13,
-                  color: inkBrown.withValues(alpha: 0.7),
+                  color: AppColors.textDim,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: algumMarcado && !_registrando ? _registrarTreino : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: algumMarcado ? vintageRed : inkBrown.withValues(alpha: 0.3),
-                foregroundColor: bgCream,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                elevation: algumMarcado ? 6 : 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  side: BorderSide(
-                    color: algumMarcado ? inkBrown : Colors.transparent, width: 2.5),
-                ),
-              ),
-              child: _registrando
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(color: bgCream, strokeWidth: 2.5),
-                    )
-                  : const Text(
-                      'REGISTRAR TREINO',
-                      style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1.2),
-                    ),
-            ),
+          const SizedBox(height: 14),
+          GradientButton(
+            label: 'REGISTRAR TREINO',
+            onPressed: algumMarcado ? _registrarTreino : null,
+            loading: _registrando,
+            fontSize: 17,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStat(String label, String value) => Column(
+  Widget _buildStat(String label, String value, Color cor) => Column(
         children: [
           Text(value,
-              style: const TextStyle(
-                fontSize: 22, fontWeight: FontWeight.w900, color: vintageRed)),
-          Text(label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: cor,
+              )),
+          const SizedBox(height: 2),
+          Text(label.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 10,
                 fontWeight: FontWeight.w700,
-                color: inkBrown.withValues(alpha: 0.7),
+                color: AppColors.textFaint,
+                letterSpacing: 1,
               )),
         ],
       );
 
   Widget _buildInfoRow(IconData icon, String text) => Row(
         children: [
-          Icon(icon, size: 15, color: inkBrown.withValues(alpha: 0.6)),
-          const SizedBox(width: 6),
+          Icon(icon, size: 15, color: AppColors.textFaint),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 13,
-                color: inkBrown.withValues(alpha: 0.8),
+                color: AppColors.textDim,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
         ],
       );
+}
+
+/// Casca dos diálogos desta tela.
+class _DialogShell extends StatelessWidget {
+  const _DialogShell({required this.children, required this.glow});
+
+  final List<Widget> children;
+  final Color glow;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          width: 290,
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: AppColors.bgElevated,
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(color: AppColors.stroke, width: 1.4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.6),
+                blurRadius: 30,
+                offset: const Offset(0, 12),
+              ),
+              BoxShadow(
+                color: glow.withValues(alpha: 0.4),
+                blurRadius: 46,
+                spreadRadius: -12,
+              ),
+            ],
+          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: children),
+        ),
+      ),
+    );
+  }
 }
 
 // ── Diálogo de boas-vindas ────────────────────────────────────────────────────
@@ -680,51 +829,27 @@ class _WelcomeDialogState extends State<_WelcomeDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          width: 280,
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEDF2F7),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFF2D4F6B), width: 3),
-            boxShadow: const [
-              BoxShadow(color: Colors.black38, blurRadius: 20, offset: Offset(4, 8))
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF7B9EC5), shape: BoxShape.circle),
-                child: const Icon(Icons.fitness_center, color: Color(0xFFEDF2F7), size: 44),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Bora treinar!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF2D4F6B)),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Dia ${widget.dia} — você consegue!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF2D4F6B).withValues(alpha: 0.75),
-                ),
-              ),
-            ],
+    return _DialogShell(
+      glow: AppColors.blue,
+      children: [
+        const GlowBadge(icon: Icons.fitness_center_rounded, size: 82),
+        const SizedBox(height: 22),
+        const GradientText(
+          'Bora treinar!',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Dia ${widget.dia} — você consegue!',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDim,
           ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -757,59 +882,37 @@ class _WorkoutSuccessDialogState extends State<_WorkoutSuccessDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          width: 280,
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEDF2F7),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFF2D4F6B), width: 3),
-            boxShadow: const [
-              BoxShadow(color: Colors.black38, blurRadius: 20, offset: Offset(4, 8))
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: widget.completo
-                      ? const Color(0xFF7B9EC5)
-                      : const Color(0xFF2D4F6B),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  widget.completo ? Icons.emoji_events : Icons.check,
-                  color: const Color(0xFFEDF2F7),
-                  size: 48,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                widget.completo ? 'Treino Completo!' : 'Treino Registrado!',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF2D4F6B)),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${widget.qtdConcluidos} de ${widget.totalExercicios} exercícios concluídos',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF2D4F6B).withValues(alpha: 0.7),
-                ),
-              ),
-            ],
+    final completo = widget.completo;
+
+    return _DialogShell(
+      glow: completo ? AppColors.success : AppColors.blue,
+      children: [
+        GlowBadge(
+          icon: completo ? Icons.emoji_events_rounded : Icons.check_rounded,
+          size: 84,
+          glowColor: completo ? AppColors.success : AppColors.blue,
+          gradient: completo
+              ? const LinearGradient(
+                  colors: [AppColors.success, AppColors.cyan])
+              : AppColors.brand,
+        ),
+        const SizedBox(height: 22),
+        GradientText(
+          completo ? 'Treino Completo!' : 'Treino Registrado!',
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${widget.qtdConcluidos} de ${widget.totalExercicios} exercícios concluídos',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDim,
           ),
         ),
-      ),
+      ],
     );
   }
 }

@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import './register_screen.dart';
+import '../theme/app_theme.dart';
 import '../widgets/main_scaffold.dart';
+import '../widgets/ui.dart';
 import '../config/app_config.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -16,14 +18,20 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // --- Paleta de Cores Vintage ---
-  final Color bgCream = const Color(0xFFEDF2F7);
-  final Color inkBrown = const Color(0xFF2D4F6B);
-  final Color vintageRed = const Color(0xFF7B9EC5);
-  final Color vintageBlue = const Color(0xFF4A7BA8);
+  bool _senhaVisivel = false;
+  bool _entrando = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   // --- Função de Login ---
   Future<void> _efetuarLogin() async {
+    if (_entrando) return;
+
     final String apiUrl = '$baseUrl/api/usuarios/login';
 
     Map<String, dynamic> loginData = {
@@ -31,6 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
       "pwd_usuario": _passwordController.text,
     };
 
+    setState(() => _entrando = true);
     try {
       final response = await http.post(
         Uri.parse(apiUrl),
@@ -41,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         if (response.statusCode == 200) {
           final usuarioLogado = jsonDecode(response.body);
-          
+
           Navigator.pushReplacement(
             context,
             PageRouteBuilder(
@@ -51,174 +60,202 @@ class _LoginScreenState extends State<LoginScreen> {
                 nomeUsuario: usuarioLogado['nm_usuario'],
               ),
               transitionsBuilder: (_, animation, __, child) => FadeTransition(
-                opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                opacity:
+                    CurvedAnimation(parent: animation, curve: Curves.easeOut),
                 child: SlideTransition(
                   position: Tween<Offset>(
                     begin: const Offset(0, 0.06),
                     end: Offset.zero,
-                  ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+                  ).animate(
+                      CurvedAnimation(parent: animation, curve: Curves.easeOut)),
                   child: child,
                 ),
               ),
             ),
           );
-
         } else if (response.statusCode == 401) {
           // Unauthorized (Senha ou e-mail errados)
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('E-mail ou senha incorretos!'), backgroundColor: Colors.red),
-          );
+          _aviso('E-mail ou senha incorretos!', AppColors.danger);
         } else {
-          print("Erro: ${response.body}");
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Erro no servidor. Tente novamente mais tarde.')),
-          );
+          debugPrint("Erro: ${response.body}");
+          _aviso('Erro no servidor. Tente novamente mais tarde.',
+              AppColors.danger);
         }
       }
     } catch (e) {
-      print("Erro de conexão: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro de rede. Verifique sua conexão.')),
-      );
+      debugPrint("Erro de conexão: $e");
+      if (mounted) {
+        _aviso('Erro de rede. Verifique sua conexão.', AppColors.danger);
+      }
+    } finally {
+      if (mounted) setState(() => _entrando = false);
     }
+  }
+
+  void _aviso(String mensagem, Color cor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensagem),
+        backgroundColor: AppColors.bgElevated,
+        showCloseIcon: true,
+        closeIconColor: AppColors.textDim,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          side: BorderSide(color: cor.withValues(alpha: 0.6)),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgCream,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 20),
-              
-              Text(
-                'Treine Se',
-                style: TextStyle(
-                  fontSize: 48, 
-                  fontWeight: FontWeight.w900,
-                  color: inkBrown,
-                  letterSpacing: 2,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              
-              const SizedBox(height: 20),
+      body: NeonBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 16),
 
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: inkBrown, width: 3),
-                ),
-                child: ClipOval(
-                  child: Icon(Icons.fitness_center, size: 80, color: inkBrown),
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              TextFormField(
-                controller: _emailController,
-                style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  labelText: 'E-MAIL',
-                  labelStyle: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
-                  filled: true,
-                  prefixIcon: Icon(Icons.email_outlined, color: inkBrown),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: inkBrown, width: 2.5),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: inkBrown, width: 4),
-                  ),
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _passwordController,
-                style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  labelText: 'SENHA',
-                  labelStyle: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
-                  filled: true,
-                  prefixIcon: Icon(Icons.lock_outline, color: inkBrown),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: inkBrown, width: 2.5),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: inkBrown, width: 4),
-                  ),
-                ),
-                obscureText: true, 
-              ),
-              
-              const SizedBox(height: 32),
-
-              ElevatedButton(
-                onPressed: _efetuarLogin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: vintageRed,
-                  foregroundColor: bgCream,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    side: BorderSide(color: inkBrown, width: 3),
-                  ),
-                ),
-                child: const Text(
-                  'ENTRAR',
+                // --- Marca ---
+                const GradientText(
+                  'Treine Se',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 24, 
+                    fontSize: 52,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
+                    letterSpacing: 1,
+                    fontStyle: FontStyle.italic,
                   ),
                 ),
-              ),
-              
-              const SizedBox(height: 16),
-
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    PageRouteBuilder(
-                      transitionDuration: const Duration(milliseconds: 350),
-                      pageBuilder: (_, __, ___) => const RegisterScreen(),
-                      transitionsBuilder: (_, animation, __, child) => SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(1.0, 0.0),
-                          end: Offset.zero,
-                        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
-                        child: child,
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Expanded(child: GlowDivider()),
+                    SizedBox(width: 12),
+                    Text(
+                      'Seu treino. Seu ritmo.',
+                      style: TextStyle(
+                        color: AppColors.textDim,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.4,
                       ),
                     ),
-                  );
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: vintageBlue,
+                    SizedBox(width: 12),
+                    Expanded(child: GlowDivider()),
+                  ],
                 ),
-                child: const Text(
-                  'Criar uma conta? Cadastre-se',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+
+                const SizedBox(height: 28),
+                const Center(child: OrbitLogo(size: 200)),
+                const SizedBox(height: 36),
+
+                // --- Campos ---
+                TextFormField(
+                  controller: _emailController,
+                  style: const TextStyle(
+                    color: AppColors.text,
+                    fontWeight: FontWeight.w600,
                   ),
+                  decoration: neonInput(
+                    label: 'E-MAIL',
+                    icon: Icons.mail_outline_rounded,
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  style: const TextStyle(
+                    color: AppColors.text,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  decoration: neonInput(
+                    label: 'SENHA',
+                    icon: Icons.lock_outline_rounded,
+                    suffix: IconButton(
+                      icon: Icon(
+                        _senhaVisivel
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: AppColors.textDim,
+                        size: 21,
+                      ),
+                      tooltip: _senhaVisivel ? 'Ocultar senha' : 'Mostrar senha',
+                      onPressed: () =>
+                          setState(() => _senhaVisivel = !_senhaVisivel),
+                    ),
+                  ),
+                  obscureText: !_senhaVisivel,
+                  onFieldSubmitted: (_) => _efetuarLogin(),
+                ),
+
+                const SizedBox(height: 30),
+
+                GradientButton(
+                  label: 'ENTRAR',
+                  onPressed: _efetuarLogin,
+                  loading: _entrando,
+                  height: 58,
+                  fontSize: 20,
+                ),
+
+                const SizedBox(height: 18),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Criar uma conta?',
+                      style: TextStyle(
+                        color: AppColors.textDim,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            transitionDuration:
+                                const Duration(milliseconds: 350),
+                            pageBuilder: (_, __, ___) => const RegisterScreen(),
+                            transitionsBuilder: (_, animation, __, child) =>
+                                SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(1.0, 0.0),
+                                end: Offset.zero,
+                              ).animate(CurvedAnimation(
+                                  parent: animation,
+                                  curve: Curves.easeOutCubic)),
+                              child: child,
+                            ),
+                          ),
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const GradientText(
+                        'Cadastre-se',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

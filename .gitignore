@@ -9,6 +9,8 @@ __pycache__/
 .venv/
 venv/
 backend/venv/
+.env
+.env*
 
 # Flutter / Dart
 treine_se/.dart_tool/

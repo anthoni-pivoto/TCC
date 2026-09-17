@@ -5,7 +5,9 @@ import 'treino_detalhe_screen.dart';
 import '../config/app_config.dart';
 import '../services/calendar_service.dart';
 import '../services/notification_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/aviso_restricoes.dart';
+import '../widgets/ui.dart';
 
 class HomeScreen extends StatefulWidget {
   final int idUsuario;
@@ -22,10 +24,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const Color bgCream    = Color(0xFFEDF2F7);
-  static const Color inkBrown   = Color(0xFF2D4F6B);
-  static const Color vintageRed = Color(0xFF7B9EC5);
-
   List<dynamic> _treinos = [];
   bool _loading = true;
   String? _erro;
@@ -39,7 +37,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _carregarTreinos() async {
-    setState(() { _loading = true; _erro = null; });
+    setState(() {
+      _loading = true;
+      _erro = null;
+    });
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/api/treinos/usuario/${widget.idUsuario}'),
@@ -51,11 +52,17 @@ class _HomeScreenState extends State<HomeScreen> {
           _mostrarBanner = _treinos.isNotEmpty;
         });
       } else {
-        setState(() { _erro = 'Erro ao carregar treinos.'; _loading = false; });
+        setState(() {
+          _erro = 'Erro ao carregar treinos.';
+          _loading = false;
+        });
       }
     } catch (e) {
       debugPrint('ERRO ao carregar treinos: $e');
-      setState(() { _erro = 'Erro: $e'; _loading = false; });
+      setState(() {
+        _erro = 'Erro: $e';
+        _loading = false;
+      });
     }
   }
 
@@ -66,44 +73,29 @@ class _HomeScreenState extends State<HomeScreen> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: bgCream,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => Padding(
-          padding: EdgeInsets.fromLTRB(
-            24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 32,
-          ),
+        builder: (ctx, setModalState) => SheetShell(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 40, height: 4,
-                  decoration: BoxDecoration(
-                    color: inkBrown.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
+              const GradientText(
                 'Agendar Treinos',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: inkBrown),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 'Seus ${_treinos.length} treino(s) serão adicionados toda semana no calendário:\n'
                 '${CalendarService.nomeDosDias(_treinos.cast<Map<String, dynamic>>())}',
-                style: TextStyle(fontSize: 13, color: inkBrown.withValues(alpha: 0.7)),
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  color: AppColors.textDim,
+                ),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Horário',
-                style: TextStyle(fontWeight: FontWeight.w700, color: inkBrown, fontSize: 15),
-              ),
+              const FieldLabel('Horário'),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: () async {
@@ -111,78 +103,59 @@ class _HomeScreenState extends State<HomeScreen> {
                     context: context,
                     initialTime: horarioSelecionado,
                   );
-                  if (picked != null) setModalState(() => horarioSelecionado = picked);
+                  if (picked != null) {
+                    setModalState(() => horarioSelecionado = picked);
+                  }
                 },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: inkBrown, width: 2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                child: GlassCard(
+                  radius: AppRadius.md,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                   child: Row(
                     children: [
-                      const Icon(Icons.access_time, color: vintageRed),
-                      const SizedBox(width: 10),
+                      const Icon(Icons.access_time_rounded,
+                          color: AppColors.cyan, size: 20),
+                      const SizedBox(width: 12),
                       Text(
                         horarioSelecionado.format(ctx),
                         style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: inkBrown,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.text,
                         ),
                       ),
                       const Spacer(),
-                      Icon(Icons.edit, size: 16, color: inkBrown.withValues(alpha: 0.5)),
+                      const Icon(Icons.edit_outlined,
+                          size: 16, color: AppColors.textFaint),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text(
-                'Duração estimada',
-                style: TextStyle(fontWeight: FontWeight.w700, color: inkBrown, fontSize: 15),
-              ),
+              const SizedBox(height: 22),
+              const FieldLabel('Duração estimada'),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
-                children: [30, 45, 60, 90].map((min) => ChoiceChip(
-                  label: Text('${min}min'),
-                  selected: duracaoMinutos == min,
-                  onSelected: (_) => setModalState(() => duracaoMinutos = min),
-                  selectedColor: vintageRed,
-                  labelStyle: TextStyle(
-                    color: duracaoMinutos == min ? bgCream : inkBrown,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  backgroundColor: bgCream,
-                  side: const BorderSide(color: inkBrown, width: 1.5),
-                )).toList(),
+                runSpacing: 8,
+                children: [30, 45, 60, 90]
+                    .map((min) => NeonChip(
+                          label: '${min}min',
+                          selected: duracaoMinutos == min,
+                          onTap: () =>
+                              setModalState(() => duracaoMinutos = min),
+                          fontSize: 13,
+                        ))
+                    .toList(),
               ),
               const SizedBox(height: 28),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _agendarTreinos(horarioSelecionado, duracaoMinutos);
-                  },
-                  icon: const Icon(Icons.calendar_month, color: bgCream),
-                  label: const Text(
-                    'Confirmar Agendamento',
-                    style: TextStyle(
-                      color: bgCream,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: vintageRed,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
+              GradientButton(
+                label: 'CONFIRMAR',
+                icon: Icons.calendar_month_rounded,
+                fontSize: 16,
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _agendarTreinos(horarioSelecionado, duracaoMinutos);
+                },
               ),
             ],
           ),
@@ -207,22 +180,11 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         if (!mounted) return;
         setState(() => _mostrarBanner = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Treinos agendados com sucesso!',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            backgroundColor: Color(0xFF2E7D32),
-            duration: Duration(seconds: 3),
-          ),
-        );
+        _aviso('Treinos agendados com sucesso!', AppColors.success);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Não foi possível agendar. Verifique as permissões do calendário.'),
-            backgroundColor: Colors.red,
-          ),
+        _aviso(
+          'Não foi possível agendar. Verifique as permissões do calendário.',
+          AppColors.danger,
         );
       }
     } finally {
@@ -230,13 +192,31 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _aviso(String mensagem, Color cor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensagem),
+        backgroundColor: AppColors.bgElevated,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          side: BorderSide(color: cor.withValues(alpha: 0.6)),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
+      bottom: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHeader(),
+          ScreenHeader(
+            eyebrow: 'Olá, ${widget.nomeUsuario.split(' ').first}!',
+            title: 'Seus Treinos',
+            trailing: _treinos.isEmpty ? null : _botaoAgendar(),
+          ),
           // Fica acima da lista, sempre visível, antes de qualquer treino.
           AvisoRestricoes(idUsuario: widget.idUsuario),
           Expanded(child: _buildBody()),
@@ -245,112 +225,114 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      color: bgCream,
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Olá, ${widget.nomeUsuario.split(' ').first}!',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: inkBrown,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (_treinos.isNotEmpty)
-                _agendandoTreinos
-                    ? const SizedBox(
-                        width: 20, height: 20,
-                        child: CircularProgressIndicator(
-                          color: vintageRed,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : IconButton(
-                        onPressed: _abrirBottomSheetAgendamento,
-                        icon: const Icon(Icons.calendar_month, color: vintageRed),
-                        tooltip: 'Agendar treinos no calendário',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          const Text(
-            'Seus Treinos',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-              color: inkBrown,
+  Widget _botaoAgendar() {
+    if (_agendandoTreinos) {
+      return const SizedBox(
+        width: 22,
+        height: 22,
+        child: CircularProgressIndicator(color: AppColors.cyan, strokeWidth: 2),
+      );
+    }
+    return GestureDetector(
+      onTap: _abrirBottomSheetAgendamento,
+      child: Container(
+        padding: const EdgeInsets.all(11),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: 0.05),
+          border: Border.all(color: AppColors.cyan.withValues(alpha: 0.45)),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.cyan.withValues(alpha: 0.22),
+              blurRadius: 16,
+              spreadRadius: -3,
             ),
-          ),
-          const SizedBox(height: 12),
-          Container(height: 3, color: inkBrown),
-        ],
+          ],
+        ),
+        child: const Icon(Icons.calendar_month_rounded,
+            color: AppColors.cyan, size: 20),
       ),
     );
   }
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: vintageRed));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.cyan),
+      );
     }
     if (_erro != null) {
       return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(_erro!, style: const TextStyle(color: inkBrown, fontSize: 16)),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _carregarTreinos,
-              style: ElevatedButton.styleFrom(backgroundColor: vintageRed),
-              child: const Text('Tentar novamente', style: TextStyle(color: bgCream)),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.wifi_off_rounded,
+                  color: AppColors.textFaint, size: 44),
+              const SizedBox(height: 16),
+              Text(
+                _erro!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.textDim, fontSize: 15),
+              ),
+              const SizedBox(height: 24),
+              OutlineGlowButton(
+                label: 'TENTAR NOVAMENTE',
+                icon: Icons.refresh_rounded,
+                onPressed: _carregarTreinos,
+              ),
+            ],
+          ),
         ),
       );
     }
     if (_treinos.isEmpty) {
       return const Center(
-        child: Text(
-          'Nenhum treino encontrado.',
-          style: TextStyle(color: inkBrown, fontSize: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.fitness_center_rounded,
+                color: AppColors.textFaint, size: 48),
+            SizedBox(height: 14),
+            Text(
+              'Nenhum treino encontrado.',
+              style: TextStyle(color: AppColors.textDim, fontSize: 15),
+            ),
+          ],
         ),
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _treinos.length + (_mostrarBanner ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (_mostrarBanner && index == 0) {
-          return _buildBannerAgendamento();
-        }
-        final treinoIndex = _mostrarBanner ? index - 1 : index;
-        return _buildTreinoCard(_treinos[treinoIndex]);
-      },
+    return RefreshIndicator(
+      onRefresh: _carregarTreinos,
+      color: AppColors.cyan,
+      backgroundColor: AppColors.bgElevated,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 110),
+        itemCount: _treinos.length + (_mostrarBanner ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (_mostrarBanner && index == 0) {
+            return _buildBannerAgendamento();
+          }
+          final treinoIndex = _mostrarBanner ? index - 1 : index;
+          return _buildTreinoCard(_treinos[treinoIndex], treinoIndex);
+        },
+      ),
     );
   }
 
   Widget _buildBannerAgendamento() {
-    return Container(
+    return GlassCard(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: vintageRed.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: vintageRed, width: 2),
-      ),
+      padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+      radius: AppRadius.md,
+      borderColor: AppColors.cyan.withValues(alpha: 0.35),
+      glowColor: AppColors.cyan,
       child: Row(
         children: [
-          const Icon(Icons.calendar_month, color: vintageRed, size: 30),
-          const SizedBox(width: 10),
+          const Icon(Icons.calendar_month_rounded,
+              color: AppColors.cyan, size: 26),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,13 +341,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   'Agendar treinos?',
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
-                    color: inkBrown,
-                    fontSize: 13,
+                    color: AppColors.text,
+                    fontSize: 14,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   'Adicione seus ${_treinos.length} treino(s) ao calendário semanal',
-                  style: TextStyle(fontSize: 11, color: inkBrown.withValues(alpha: 0.7)),
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: AppColors.textDim,
+                    height: 1.3,
+                  ),
                 ),
               ],
             ),
@@ -373,24 +360,29 @@ class _HomeScreenState extends State<HomeScreen> {
           TextButton(
             onPressed: _abrirBottomSheetAgendamento,
             style: TextButton.styleFrom(
-              foregroundColor: vintageRed,
               padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: const Text(
+            child: const GradientText(
               'Agendar',
               style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
             ),
           ),
           GestureDetector(
             onTap: () => setState(() => _mostrarBanner = false),
-            child: Icon(Icons.close, size: 16, color: inkBrown.withValues(alpha: 0.5)),
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child:
+                  Icon(Icons.close_rounded, size: 16, color: AppColors.textFaint),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTreinoCard(Map<String, dynamic> treino) {
+  Widget _buildTreinoCard(Map<String, dynamic> treino, int posicao) {
     final List exercicios = treino['exercicios'] ?? [];
     final int dia = treino['dia_treino'];
     final gruposUnicos = exercicios
@@ -398,7 +390,17 @@ class _HomeScreenState extends State<HomeScreen> {
         .toSet()
         .toList();
 
-    return GestureDetector(
+    // Cada card puxa um pouco mais para o roxo conforme desce a lista, o que
+    // dá ritmo visual sem inventar cores fora da paleta.
+    final double t = _treinos.length <= 1
+        ? 0
+        : (posicao / (_treinos.length - 1)).clamp(0.0, 1.0);
+    final Color acento = Color.lerp(AppColors.cyan, AppColors.purple, t)!;
+
+    return GlassCard(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      glowColor: acento,
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
@@ -408,44 +410,93 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: inkBrown, width: 2.5),
-          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(3, 3))],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Dia $dia',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: inkBrown,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${exercicios.length} exercícios  •  ${gruposUnicos.join(', ')}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: inkBrown.withValues(alpha: 0.7),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+      child: Row(
+        children: [
+          // Selo do dia
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              gradient: LinearGradient(
+                colors: [
+                  acento.withValues(alpha: 0.9),
+                  acento.withValues(alpha: 0.45),
                 ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: acento.withValues(alpha: 0.4),
+                  blurRadius: 16,
+                  spreadRadius: -4,
+                ),
+              ],
             ),
-            const Icon(Icons.arrow_forward_ios, color: vintageRed, size: 18),
-          ],
-        ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'DIA',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white70,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                Text(
+                  '$dia',
+                  style: const TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    height: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  gruposUnicos.isEmpty
+                      ? 'Treino do dia'
+                      : gruposUnicos.join(' · '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.text,
+                    height: 1.25,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(Icons.format_list_numbered_rounded,
+                        size: 13, color: acento),
+                    const SizedBox(width: 5),
+                    Text(
+                      '${exercicios.length} exercícios',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textDim,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.arrow_forward_ios_rounded, color: acento, size: 15),
+        ],
       ),
     );
   }

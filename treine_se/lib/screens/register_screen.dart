@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import '../config/app_config.dart';
+import '../theme/app_theme.dart';
+import '../widgets/ui.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -24,6 +26,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String _selectedFocus = "full_body";
   int _selectedDays = 4;
 
+  bool _senhaVisivel = false;
+
   // label exibido -> valor enviado ao backend
   final Map<String, String> _goalOptions = {
     "Ganho de Força":  "forca",
@@ -37,11 +41,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     "Inferiores":   "inferiores",
   };
   final List<int> _daysOptions = [2, 3, 4, 5];
-
-  // --- Paleta de Cores Vintage ---
-  final Color bgCream = const Color(0xFFEDF2F7);
-  final Color inkBrown = const Color(0xFF2D4F6B);
-  final Color vintageRed = const Color(0xFF7B9EC5);
 
   // Trava o botão durante o cadastro: a geração do treino pela IA leva uns
   // 13 segundos, e sem isso o usuário toca de novo e cria dois cadastros.
@@ -69,6 +68,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _carregarLesoes();
   }
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _weightController.dispose();
+    _heightController.dispose();
+    super.dispose();
+  }
+
   Future<void> _carregarLesoes() async {
     try {
       final resp = await http.get(Uri.parse('$baseUrl/api/lesoes/'));
@@ -87,9 +96,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _buildLesoesPicker() {
     if (_loadingLesoes) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Center(child: CircularProgressIndicator(color: vintageRed, strokeWidth: 2)),
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.cyan,
+            strokeWidth: 2,
+          ),
+        ),
       );
     }
     final nenhumaId = _lesoes.isNotEmpty
@@ -106,17 +120,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         final id = l['id_lesao'] as int;
         final nome = l['nm_lesao'] as String;
         final selected = _selectedLesoes.contains(id);
-        return FilterChip(
-          label: Text(
-            nome,
-            style: TextStyle(
-              color: selected ? bgCream : inkBrown,
-              fontWeight: FontWeight.w700,
-              fontSize: 11,
-            ),
-          ),
+        return NeonChip(
+          label: nome,
           selected: selected,
-          onSelected: (val) => setState(() {
+          fontSize: 11.5,
+          onTap: () => setState(() {
+            final val = !selected;
             if (id == nenhumaId) {
               _selectedLesoes.clear();
               if (val) { _selectedLesoes.add(id); }
@@ -126,14 +135,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               else { _selectedLesoes.remove(id); }
             }
           }),
-          selectedColor: vintageRed,
-          backgroundColor: Colors.white.withValues(alpha: 0.5),
-          side: BorderSide(
-            color: selected ? inkBrown : inkBrown.withValues(alpha: 0.3),
-            width: 1.5,
-          ),
-          checkmarkColor: bgCream,
-          showCheckmark: false,
         );
       }).toList(),
     );
@@ -280,7 +281,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Fechar',
-      barrierColor: Colors.black54,
+      barrierColor: Colors.black.withValues(alpha: 0.7),
       transitionDuration: const Duration(milliseconds: 350),
       pageBuilder: (_, __, ___) => _ErrorDialog(mensagem: mensagem),
       transitionBuilder: (_, anim, __, child) => ScaleTransition(
@@ -294,7 +295,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black54,
+      barrierColor: Colors.black.withValues(alpha: 0.7),
       transitionDuration: const Duration(milliseconds: 500),
       pageBuilder: (_, __, ___) => const _SuccessDialog(),
       transitionBuilder: (_, anim, __, child) => ScaleTransition(
@@ -304,228 +305,284 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // --- HELPER: Função para não repetir o estilo das bordas em todos os campos ---
-  InputDecoration _buildVintageDecoration(String label) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
-      filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.5),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: inkBrown, width: 2.5),
+  /// Dropdown com a mesma casca dos campos de texto.
+  Widget _dropdown<T>({
+    required String label,
+    required T value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return DropdownButtonFormField<T>(
+      initialValue: value,
+      decoration: neonInput(label: label),
+      dropdownColor: AppColors.bgElevated,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      icon: const Icon(Icons.keyboard_arrow_down_rounded,
+          color: AppColors.cyan, size: 22),
+      style: const TextStyle(
+        color: AppColors.text,
+        fontWeight: FontWeight.w600,
+        fontSize: 15,
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: inkBrown, width: 4),
-      ),
+      items: items,
+      onChanged: onChanged,
     );
   }
+
+  static DropdownMenuItem<T> _item<T>(T value, String texto) =>
+      DropdownMenuItem<T>(
+        value: value,
+        child: Text(
+          texto,
+          style: const TextStyle(
+            color: AppColors.text,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgCream,
-      appBar: AppBar(
-        backgroundColor: bgCream,
-        elevation: 0, 
-        iconTheme: IconThemeData(color: inkBrown, size: 28), 
-        title: Text(
-          'Criar Conta', 
-          style: TextStyle(color: inkBrown, fontWeight: FontWeight.w900, fontSize: 26)
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(3.0),
-          child: Container(color: inkBrown, height: 3.0), 
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Conte-nos sobre você',
-              style: TextStyle(
-                fontSize: 26, 
-                fontWeight: FontWeight.w900,
-                color: inkBrown,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            
-            // --- CAMPOS DE TEXTO ---
-            TextFormField(
-              controller: _nameController,
-              style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
-              decoration: _buildVintageDecoration('Nome Completo'),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _emailController,
-              style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
-              decoration: _buildVintageDecoration('E-mail'),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _passwordController,
-              style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
-              decoration: _buildVintageDecoration('Senha'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 16),
-            
-            // PESO E ALTURA
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _weightController,
-                    style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
-                    decoration: _buildVintageDecoration('Peso (kg)'),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    controller: _heightController,
-                    style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold),
-                    decoration: _buildVintageDecoration('Altura (m)'),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // --- SELETORES (DROPDOWNS) ---
-            
-            // 1. Seletor de Objetivo
-            DropdownButtonFormField<String>(
-              value: _selectedGoal,
-              decoration: _buildVintageDecoration('Objetivo'),
-              dropdownColor: bgCream,
-              iconEnabledColor: inkBrown,
-              items: _goalOptions.entries.map((entry) {
-                return DropdownMenuItem<String>(
-                  value: entry.value,
-                  child: Text(entry.key, style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold)),
-                );
-              }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  _selectedGoal = newValue!;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // 2. Seletor de Foco
-            DropdownButtonFormField<String>(
-              value: _selectedFocus,
-              decoration: _buildVintageDecoration('Foco do Treino'),
-              dropdownColor: bgCream,
-              iconEnabledColor: inkBrown,
-              items: _focusOptions.entries.map((entry) {
-                return DropdownMenuItem<String>(
-                  value: entry.value,
-                  child: Text(entry.key, style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold)),
-                );
-              }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  _selectedFocus = newValue!;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // 3. Seletor de Dias de Treino
-            DropdownButtonFormField<int>(
-              value: _selectedDays,
-              decoration: _buildVintageDecoration('Dias de treino por semana'),
-              dropdownColor: bgCream,
-              iconEnabledColor: inkBrown,
-              items: _daysOptions.map((int value) {
-                return DropdownMenuItem<int>(
-                  value: value,
-                  child: Text('$value dias', style: TextStyle(color: inkBrown, fontWeight: FontWeight.bold)),
-                );
-              }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  _selectedDays = newValue!;
-                });
-              },
-            ),
-
-            const SizedBox(height: 24),
-            Text(
-              'Lesões / Restrições',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: inkBrown),
-            ),
-            Text(
-              'Selecione caso tenha alguma lesão ou restrição',
-              style: TextStyle(fontSize: 11, color: inkBrown.withValues(alpha: 0.6)),
-            ),
-            const SizedBox(height: 8),
-            _buildLesoesPicker(),
-            const SizedBox(height: 40),
-
-            // --- BOTÃO DE CADASTRO VINTAGE ---
-            ElevatedButton(
-              onPressed: _enviando ? null : _cadastrarUsuario,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: vintageRed,
-                foregroundColor: bgCream,
-                disabledBackgroundColor: vintageRed.withValues(alpha: 0.6),
-                disabledForegroundColor: bgCream,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                elevation: 6,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  side: BorderSide(color: inkBrown, width: 3), // Borda estilo desenho
-                ),
-              ),
-              child: _enviando
-                  // A espera é longa; sem sinal na tela o usuário toca de novo
-                  // ou acha que o app travou.
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3,
-                            valueColor: AlwaysStoppedAnimation<Color>(bgCream),
-                          ),
+      body: NeonBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Cabeçalho com o botão voltar no lugar da AppBar sólida.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 20, 0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded,
+                          color: AppColors.text),
+                      onPressed: () => Navigator.pop(context),
+                      tooltip: 'Voltar',
+                    ),
+                    const Expanded(
+                      child: GradientText(
+                        'Criar Conta',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
                         ),
-                        const SizedBox(width: 14),
-                        const Text(
-                          'MONTANDO SEU TREINO...',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ],
-                    )
-                  : const Text(
-                      'FINALIZAR CADASTRO',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
                       ),
                     ),
-            ),
-            const SizedBox(height: 20),
-          ],
+                  ],
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: GlowDivider(),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'Conte-nos sobre você',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: AppColors.textDim,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 26),
+
+                      // --- CAMPOS DE TEXTO ---
+                      TextFormField(
+                        controller: _nameController,
+                        style: const TextStyle(
+                            color: AppColors.text, fontWeight: FontWeight.w600),
+                        decoration: neonInput(
+                          label: 'Nome Completo',
+                          icon: Icons.person_outline_rounded,
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _emailController,
+                        style: const TextStyle(
+                            color: AppColors.text, fontWeight: FontWeight.w600),
+                        decoration: neonInput(
+                          label: 'E-mail',
+                          icon: Icons.mail_outline_rounded,
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _passwordController,
+                        style: const TextStyle(
+                            color: AppColors.text, fontWeight: FontWeight.w600),
+                        decoration: neonInput(
+                          label: 'Senha',
+                          icon: Icons.lock_outline_rounded,
+                          suffix: IconButton(
+                            icon: Icon(
+                              _senhaVisivel
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: AppColors.textDim,
+                              size: 21,
+                            ),
+                            onPressed: () =>
+                                setState(() => _senhaVisivel = !_senhaVisivel),
+                          ),
+                        ),
+                        obscureText: !_senhaVisivel,
+                      ),
+                      const SizedBox(height: 14),
+
+                      // PESO E ALTURA
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _weightController,
+                              style: const TextStyle(
+                                  color: AppColors.text,
+                                  fontWeight: FontWeight.w600),
+                              decoration: neonInput(
+                                label: 'Peso (kg)',
+                                icon: Icons.monitor_weight_outlined,
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _heightController,
+                              style: const TextStyle(
+                                  color: AppColors.text,
+                                  fontWeight: FontWeight.w600),
+                              decoration: neonInput(
+                                label: 'Altura (m)',
+                                icon: Icons.height_rounded,
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 26),
+
+                      // --- SELETORES ---
+                      _dropdown<String>(
+                        label: 'Objetivo',
+                        value: _selectedGoal,
+                        items: _goalOptions.entries
+                            .map((e) => _item(e.value, e.key))
+                            .toList(),
+                        onChanged: (v) => setState(() => _selectedGoal = v!),
+                      ),
+                      const SizedBox(height: 14),
+                      _dropdown<String>(
+                        label: 'Foco do Treino',
+                        value: _selectedFocus,
+                        items: _focusOptions.entries
+                            .map((e) => _item(e.value, e.key))
+                            .toList(),
+                        onChanged: (v) => setState(() => _selectedFocus = v!),
+                      ),
+                      const SizedBox(height: 22),
+
+                      // Dias vira chip: a escolha é curta e fica visível de uma vez.
+                      const FieldLabel('Dias de treino por semana'),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _daysOptions
+                            .map((d) => NeonChip(
+                                  label: '$d dias',
+                                  selected: _selectedDays == d,
+                                  fontSize: 13,
+                                  onTap: () =>
+                                      setState(() => _selectedDays = d),
+                                ))
+                            .toList(),
+                      ),
+
+                      const SizedBox(height: 26),
+                      const FieldLabel('Lesões / Restrições'),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Selecione caso tenha alguma lesão ou restrição',
+                        style: TextStyle(
+                            fontSize: 11.5, color: AppColors.textFaint),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildLesoesPicker(),
+                      const SizedBox(height: 36),
+
+                      GradientButton(
+                        label: 'FINALIZAR CADASTRO',
+                        onPressed: _enviando ? null : _cadastrarUsuario,
+                        loading: _enviando,
+                        // A espera é longa; sem sinal na tela o usuário toca de
+                        // novo ou acha que o app travou.
+                        loadingLabel: 'MONTANDO SEU TREINO...',
+                        height: 58,
+                        fontSize: 17,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Casca dos diálogos: card de vidro escuro com halo colorido.
+class _DialogShell extends StatelessWidget {
+  const _DialogShell({
+    required this.children,
+    required this.glow,
+    this.width = 290,
+  });
+
+  final List<Widget> children;
+  final Color glow;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          width: width,
+          padding: const EdgeInsets.all(30),
+          decoration: BoxDecoration(
+            color: AppColors.bgElevated,
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(color: AppColors.stroke, width: 1.4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.6),
+                blurRadius: 30,
+                offset: const Offset(0, 12),
+              ),
+              BoxShadow(
+                color: glow.withValues(alpha: 0.35),
+                blurRadius: 44,
+                spreadRadius: -12,
+              ),
+            ],
+          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: children),
         ),
       ),
     );
@@ -550,58 +607,40 @@ class _SuccessDialogState extends State<_SuccessDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          width: 260,
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEDF2F7),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFF2D4F6B), width: 3),
-            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 16, offset: Offset(4, 6))],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF4CAF50),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check, color: Colors.white, size: 44),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Cadastro realizado!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF2D4F6B),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Seus treinos foram gerados.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: const Color(0xFF2D4F6B).withValues(alpha: 0.7),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+    return _DialogShell(
+      glow: AppColors.success,
+      children: [
+        const GlowBadge(
+          icon: Icons.check_rounded,
+          glowColor: AppColors.success,
+          gradient: LinearGradient(
+            colors: [AppColors.success, AppColors.cyan],
           ),
         ),
-      ),
+        const SizedBox(height: 22),
+        const Text(
+          'Cadastro realizado!',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+            color: AppColors.text,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Seus treinos foram gerados.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            color: AppColors.textDim,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }
-
 
 class _ErrorDialog extends StatelessWidget {
   const _ErrorDialog({required this.mensagem});
@@ -610,78 +649,46 @@ class _ErrorDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const inkBrown = Color(0xFF2D4F6B);
-
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          width: 300,
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEDF2F7),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: inkBrown, width: 3),
-            boxShadow: const [
-              BoxShadow(color: Colors.black26, blurRadius: 16, offset: Offset(4, 6)),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFC0563F),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.priority_high, color: Colors.white, size: 44),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Não foi possível cadastrar',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
-                  color: inkBrown,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                mensagem,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.4,
-                  color: inkBrown.withValues(alpha: 0.8),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: inkBrown,
-                    foregroundColor: const Color(0xFFEDF2F7),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  child: const Text(
-                    'ENTENDI',
-                    style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.1),
-                  ),
-                ),
-              ),
-            ],
+    return _DialogShell(
+      glow: AppColors.danger,
+      width: 310,
+      children: [
+        const GlowBadge(
+          icon: Icons.priority_high_rounded,
+          glowColor: AppColors.danger,
+          gradient: LinearGradient(
+            colors: [AppColors.danger, AppColors.magenta],
           ),
         ),
-      ),
+        const SizedBox(height: 22),
+        const Text(
+          'Não foi possível cadastrar',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 19,
+            fontWeight: FontWeight.w900,
+            color: AppColors.text,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          mensagem,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 14,
+            height: 1.45,
+            color: AppColors.textDim,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 24),
+        GradientButton(
+          label: 'ENTENDI',
+          fontSize: 15,
+          height: 48,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
     );
   }
 }

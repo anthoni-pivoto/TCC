@@ -59,12 +59,20 @@ def contraindicacoes(db: Session, usuario: UsuarioDB) -> tuple[set, dict]:
     return bloqueados, avisos
 
 
-def grupos_sem_exercicio(db: Session, id_usuario: int) -> list[str]:
-    """Grupos musculares que ficaram sem nenhum exercício liberado.
+def resumo_restricoes(db: Session, id_usuario: int) -> dict:
+    """Tudo o que o aviso das telas precisa saber sobre as lesões do usuário.
 
-    É o caso em que o app não consegue prescrever nada seguro para uma região —
-    a informação que justifica recomendar acompanhamento profissional.
+    O aviso aparece para quem marcou qualquer lesão, e não só para quem ficou
+    com uma região inteira sem exercício: mesmo quando sobra o que treinar, o
+    usuário precisa saber quais músculos o app passou a tratar com cuidado.
+
+    - `lesoes`: o que ele marcou, já sem a opção "Nenhuma".
+    - `grupos_afetados`: músculos com ao menos um exercício restrito (bloqueio
+      ou cautela) por essas lesões.
+    - `grupos_sem_exercicio`: subconjunto em que nada sobrou — o caso grave.
     """
+    vazio = {"lesoes": [], "grupos_afetados": [], "grupos_sem_exercicio": []}
+
     usuario = (
         db.query(UsuarioDB)
         .options(joinedload(UsuarioDB.lesoes))
@@ -72,14 +80,32 @@ def grupos_sem_exercicio(db: Session, id_usuario: int) -> list[str]:
         .first()
     )
     if usuario is None:
-        return []
+        return vazio
 
-    bloqueados, _ = contraindicacoes(db, usuario)
-    if not bloqueados:
-        return []
+    # "Nenhuma" existe só para o usuário conseguir dizer que não tem lesão; ela
+    # não restringe nada e não pode disparar o aviso.
+    lesoes = sorted(
+        lesao.nm_lesao
+        for lesao in usuario.lesoes
+        if lesao.nm_lesao.strip().lower() != "nenhuma"
+    )
+    if not lesoes:
+        return vazio
+
+    bloqueados, avisos = contraindicacoes(db, usuario)
+    restritos = bloqueados | set(avisos)
 
     todos = db.query(ExercicioDB.id_exercicio, ExercicioDB.grupo_muscular).all()
-    com_exercicio = {g for i, g in todos if i not in bloqueados}
-    zerados = {g for _, g in todos} - com_exercicio
 
-    return sorted(ROTULOS_GRUPOS.get(g, g) for g in zerados)
+    afetados = {g for i, g in todos if i in restritos}
+    com_exercicio = {g for i, g in todos if i not in bloqueados}
+    zerados = {g for _, g in todos if g in afetados} - com_exercicio
+
+    def rotular(grupos):
+        return sorted(ROTULOS_GRUPOS.get(g, g) for g in grupos)
+
+    return {
+        "lesoes": lesoes,
+        "grupos_afetados": rotular(afetados),
+        "grupos_sem_exercicio": rotular(zerados),
+    }
