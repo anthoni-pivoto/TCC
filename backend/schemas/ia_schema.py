@@ -7,6 +7,21 @@ from typing import Annotated, List
 # quanto o tipo.
 
 
+# Faixas de série, repetição e descanso por objetivo, conforme Fleck e Kraemer
+# (2017) e as diretrizes do ACSM (2021) para praticantes iniciantes e
+# intermediários, que é o público do aplicativo.
+FAIXAS_POR_OBJETIVO = {
+    "forca":           {"reps": (4, 8),   "descanso": (120, 240)},
+    "hipertrofia":     {"reps": (8, 12),  "descanso": (45, 120)},
+    "emagrecimento":   {"reps": (12, 20), "descanso": (15, 60)},
+    "condicionamento": {"reps": (12, 20), "descanso": (15, 60)},
+}
+
+# Cadastros antigos trazem objetivos fora da lista atual; nesses casos vale a
+# faixa ampla, que é o comportamento anterior à restrição por objetivo.
+FAIXA_PADRAO = {"reps": (3, 30), "descanso": (15, 240)}
+
+
 class ExercicioPrescrito(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -48,20 +63,64 @@ class PlanoTreino(BaseModel):
     dias: List[DiaTreino]
 
 
-def plano_com_dias(qtd_dias: int) -> type[PlanoTreino]:
-    """Devolve uma variação de PlanoTreino que aceita exatamente qtd_dias dias.
+def plano_com_dias(qtd_dias: int, objetivo: str | None = None) -> type[PlanoTreino]:
+    """Variação de PlanoTreino ajustada ao usuário: dias exatos e faixas do objetivo.
 
-    A quantidade muda por usuário, então não dá para fixá-la na classe. Sem este
-    limite o pedido vira só texto no prompt, e o modelo às vezes devolve 7 dias
-    para quem treina 4 — a validação reprovava e o usuário caía no motor de
-    regras. Com min/max no schema, a própria API impede a resposta errada.
+    Duas exigências que antes viviam só no texto do prompt passam por aqui.
+
+    A quantidade de dias muda por usuário, então não dá para fixá-la na classe.
+    Sem este limite o modelo às vezes devolvia 7 dias para quem treina 4 — a
+    validação reprovava e o usuário caía no motor de regras.
+
+    As faixas de repetição e descanso seguiram o mesmo caminho depois que a
+    medição mostrou o problema: com a instrução apenas textual ("cargas altas e
+    descansos longos para força"), 25% das prescrições de força saíam com 8 a 15
+    repetições, faixa de hipertrofia. O modelo acertava onde havia referência
+    numérica e errava onde não havia.
     """
+    faixa = FAIXAS_POR_OBJETIVO.get(objetivo or "", FAIXA_PADRAO)
+    rep_min, rep_max = faixa["reps"]
+    desc_min, desc_max = faixa["descanso"]
+
+    exercicio = create_model(
+        "ExercicioPrescrito_%s" % (objetivo or "padrao"),
+        __base__=ExercicioPrescrito,
+        qtd_repeticoes=(
+            Annotated[
+                int,
+                Field(
+                    ge=rep_min, le=rep_max,
+                    description="Repetições por série, entre %d e %d para este objetivo."
+                                % (rep_min, rep_max),
+                ),
+            ],
+            ...,
+        ),
+        tempo_descanso_s=(
+            Annotated[
+                int,
+                Field(
+                    ge=desc_min, le=desc_max,
+                    description="Descanso entre séries, entre %d e %d segundos."
+                                % (desc_min, desc_max),
+                ),
+            ],
+            ...,
+        ),
+    )
+
+    dia = create_model(
+        "DiaTreino_%s" % (objetivo or "padrao"),
+        __base__=DiaTreino,
+        exercicios=(List[exercicio], ...),
+    )
+
     return create_model(
         "PlanoTreino%dDias" % qtd_dias,
         __base__=PlanoTreino,
         dias=(
             Annotated[
-                List[DiaTreino],
+                List[dia],
                 Field(
                     min_length=qtd_dias,
                     max_length=qtd_dias,

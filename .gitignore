@@ -23,3 +23,6 @@ treine_se/.flutter-plugins*
 .vscode/
 Thumbs.db
 desktop.ini
+
+# Anotacoes pessoais (nao versionar)
+Secao_6_Avaliacao_Resultados.md

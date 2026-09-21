@@ -4,6 +4,7 @@ from models.usuario_model import UsuarioDB
 from models.exercicio_model import ExercicioDB
 from controllers.treino_controller import criar_treino
 from schemas.treino_schema import TreinoCreate, TreinoExercicioCreate
+from services.restricoes_service import contraindicacoes
 
 # Splits: foco -> qtd_dias -> lista de dias (cada dia = lista de grupos musculares)
 SPLITS = {
@@ -13,22 +14,22 @@ SPLITS = {
             ["costas", "biceps"],
         ],
         3: [
-            ["peito", "triceps"],
+            ["peito", "triceps", "ombro"],
             ["costas", "biceps"],
-            ["ombro"],
+            ["quadriceps", "gluteos", "panturrilha", "isquiotibiais", "adutores", "abdutores"],
         ],
         4: [
-            ["peito", "triceps"],
+            ["peito", "triceps", "ombro"],
             ["costas", "biceps"],
-            ["ombro"],
-            ["peito", "costas"],
+            ["quadriceps", "gluteos", "panturrilha", "isquiotibiais", "adutores", "abdutores"],
+            ["peito", "costas", "biceps", "triceps", "ombro"],
         ],
         5: [
-            ["peito", "triceps"],
+            ["peito", "triceps", "ombro"],
             ["costas", "biceps"],
-            ["ombro"],
-            ["peito"],
-            ["costas"],
+            ["quadriceps", "gluteos", "panturrilha", "isquiotibiais", "adutores", "abdutores"],
+            ["peito", "triceps", "ombro"],
+            ["costas", "biceps"],
         ],
     },
     "inferiores": {
@@ -90,6 +91,17 @@ PARAMS_OBJETIVO = {
 }
 
 EXERCICIOS_POR_DIA = 5  # total alvo de exercícios por dia
+MAX_CAUTELA_DIA = 1     # no máximo um exercício sob ressalva por sessão
+
+
+def _params_reduzidos(params: dict) -> dict:
+    """Volume menor para o exercício sob ressalva: uma série a menos.
+
+    As mesmas condições que o prompt impõe à IA valem aqui — carga e volume
+    abaixo do restante do treino —, e no motor de regras a única variável
+    disponível para isso é a quantidade de séries.
+    """
+    return {**params, "qtd_series": max(2, params["qtd_series"] - 1)}
 
 
 def gerar_treino_personalizado(db: Session, id_usuario: int) -> list:

@@ -1,0 +1,72 @@
+Usuário 0: as lesões zeraram os grupos ['gluteos', 'isquiotibiais', 'panturrilha', 'quadriceps']
+
+=== P1 | hipertrofia/full_body/3d | catálogo 39/39 (0 sob cautela) ===
+  P1 r1 t1: ok (11.78s, 18 exercícios)
+  P1 r2 t1: ok (5.73s, 18 exercícios)
+  P1 r3 t1: ok (7.35s, 18 exercícios)
+  P1 r4 t1: ok (5.75s, 18 exercícios)
+  P1 r5 t1: ok (5.88s, 18 exercícios)
+  P1 r6 t1: ok (5.56s, 18 exercícios)
+  P1 r7 t1: ok (5.26s, 18 exercícios)
+  P1 r8 t1: ok (5.42s, 18 exercícios)
+  P1 r9 t1: ok (5.37s, 18 exercícios)
+  P1 r10 t1: ok (5.5s, 18 exercícios)
+
+=== P2 | forca/superiores/4d | catálogo 29/39 (6 sob cautela) ===
+  P2 r1 t1: ok (6.35s, 17 exercícios)
+  P2 r2 t1: ok (6.45s, 19 exercícios)
+  P2 r3 t1: ok (5.68s, 16 exercícios)
+  P2 r4 t1: ok (6.15s, 18 exercícios)
+  P2 r5 t1: ok (6.03s, 18 exercícios)
+  P2 r6 t1: ok (6.94s, 20 exercícios)
+  P2 r7 t1: ok (6.18s, 19 exercícios)
+  P2 r8 t1: ok (5.94s, 19 exercícios)
+  P2 r9 t1: ok (6.11s, 18 exercícios)
+  P2 r10 t1: ok (6.14s, 19 exercícios)
+
+=== P3 | emagrecimento/inferiores/2d | catálogo 24/39 (2 sob cautela) ===
+  P3 r1 t1: ok (4.35s, 10 exercícios)
+  P3 r2 t1: ok (4.68s, 10 exercícios)
+  P3 r3 t1: ok (4.58s, 10 exercícios)
+  P3 r4 t1: ok (4.09s, 8 exercícios)
+  P3 r5 t1: ok (4.46s, 10 exercícios)
+  P3 r6 t1: ok (5.65s, 8 exercícios)
+  P3 r7 t1: ok (4.16s, 8 exercícios)
+  P3 r8 t1: ok (4.26s, 8 exercícios)
+  P3 r9 t1: ok (4.0s, 8 exercícios)
+  P3 r10 t1: ok (3.78s, 8 exercícios)
+
+=== P4 | condicionamento/full_body/5d | catálogo 28/39 (4 sob cautela) ===
+  P4 r1 t1: ok (7.3s, 24 exercícios)
+  P4 r2 t1: ok (6.63s, 25 exercícios)
+  P4 r3 t1: ok (8.28s, 24 exercícios)
+  P4 r4 t1: ok (7.88s, 30 exercícios)
+  P4 r5 t1: ok (7.96s, 30 exercícios)
+  P4 r6 t1: ok (7.38s, 25 exercícios)
+  P4 r7 t1: ok (7.4s, 27 exercícios)
+  P4 r8 t1: ok (7.66s, 25 exercícios)
+  P4 r9 t1: ok (7.29s, 26 exercícios)
+  P4 r10 t1: REPROVADO (qtd_exercicios_fora_da_faixa) — Dia 2: 3 exercícios, fora da faixa 4-7
+  P4 r10 t2: ok (7.06s, 25 exercícios)
+
+==============================================================
+RESUMO — números para o Quadro 5
+==============================================================
+Chamadas à API .............................. 41
+Chamadas aprovadas na validação ............. 40 (97.6%)
+Fichas com origem 'ia' (após até 2 tentativas) 40/40 (100.0%)
+Fichas que cairiam no motor de regras ....... 0
+Latência média / mín / máx (s) .............. 6.11 / 3.78 / 11.78
+Motivos de reprovação ....................... {'qtd_exercicios_fora_da_faixa': 1}
+
+Aderência às regras de cautela (só instruídas, não validadas):
+  exercícios sob ressalva prescritos ........ 25
+  ...como primeiro exercício do dia ......... 8
+  ...mais de um no mesmo dia ................ 10
+  ...havendo alternativa liberada ........... 14
+
+Grupos musculares fora do foco declarado .... 42
+
+CSV por execução:  C:\Users\antho\OneDrive\Documentos\TCC\backend\avaliacao\resultados\execucoes_claude-haiku-4-5_20260920_1224.csv
+CSV por exercício: C:\Users\antho\OneDrive\Documentos\TCC\backend\avaliacao\resultados\prescricoes_claude-haiku-4-5_20260920_1224.csv
+A coerência com as faixas da literatura está na coluna 'dentro_da_faixa_literatura' do segundo CSV.
